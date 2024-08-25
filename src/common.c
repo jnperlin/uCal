@@ -77,7 +77,7 @@ parseDate(
 {
     extern int32_t ucal_DateToRdnGD(int16_t, int16_t, int16_t);
 
-    short y, m, d;
+    unsigned short y, m, d;
     char ms[4];
     const char* mp;
 
