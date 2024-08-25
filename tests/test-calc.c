@@ -54,7 +54,7 @@ static void test_mod7(void) {
     static int32_t table[tabsize];
     int r1, r2;
 
-    getrandom(table, sizeof(table), 0);
+    TEST_ASSERT_EQUAL(sizeof(table), getrandom(table, sizeof(table), 0));
 
     for (unsigned i = 0; i < tabsize; ++i) {
       r1 = ucal_i32Mod7(table[i]);
