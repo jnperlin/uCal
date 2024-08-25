@@ -37,36 +37,52 @@ void tearDown(void)
   //NOP
 }
 
+static int32_t wcYearsStart(int32_t ey)
+{
+    int32_t rdn;
+    rdn = (ey * 365) + ucal_LeapDaysInYearsGD(ey) + 1;
+    rdn = ucal_WdNear(rdn, ucal_wdMON);
+    return rdn;
+}
+
 static bool tref_RdnToDateWD(ucal_WeekDateT *into, int32_t rdn)
 {
     bool retv = false;
-    // we cheat a bit here:
-    int32_t y0 = rdn / 365.2425;
-    int32_t dlo = ucal_WdNear(ucal_YearStartGD((int16_t)y0 + 0), ucal_wdMON);
-    int32_t dhi = ucal_WdNear(ucal_YearStartGD((int16_t)y0 + 1), ucal_wdMON);
 
-    if (rdn >= dhi)
+    int32_t y0  = ucal_DaysToYearsGD(rdn, NULL).q;
+    int32_t dlo = wcYearsStart(y0 + 0);
+    int32_t dhi = wcYearsStart(y0 + 1);
+
+    if (rdn >= dhi) {
+        int loops = 10;
         do {
+            if (!--loops)
+              return false;
             ++y0;
             dlo = dhi;
-            dhi = ucal_WdNear(ucal_YearStartGD((int16_t)y0 + 1), ucal_wdMON);
+            dhi = wcYearsStart(y0 + 1);
         } while (rdn >= dhi);
-    else if (rdn < dlo)
-        do {
-            --y0;
-            dhi = dlo;
-            dlo = ucal_WdNear(ucal_YearStartGD((int16_t)y0 + 0), ucal_wdMON);
-        } while (rdn < dlo);
+    } else if (rdn < dlo) {
+      int loops = 10;
+      do {
+        if (!--loops)
+          return false;
+        --y0;
+        dhi = dlo;
+        dlo = wcYearsStart(y0 + 0);
+      } while (rdn < dlo);
+    }
 
+    ++y0;
     if (y0 > INT16_MAX) {
-        into->dYear = INT16_MAX;
-        errno = ERANGE;
+      into->dYear = INT16_MAX;
+      errno = ERANGE;
     } else if (y0 < INT16_MIN) {
-        into->dYear = INT16_MIN;
-        errno = ERANGE;
+      into->dYear = INT16_MIN;
+      errno = ERANGE;
     } else {
-        into->dYear = (int16_t)y0;
-        retv = true;
+      into->dYear = (int16_t)y0;
+      retv = true;
     }
     rdn -= dlo;
     into->dWDay = (rdn % 7u) + 1;
@@ -77,7 +93,7 @@ static bool tref_RdnToDateWD(ucal_WeekDateT *into, int32_t rdn)
 static void
 test_ystart(void)
 {
-    for (int32_t y = INT16_MIN; y >= INT16_MAX; ++y) {
+    for (int32_t y = INT16_MIN; y <= INT16_MAX; ++y) {
         int32_t exp, act;
         exp = ucal_WdNear(ucal_YearStartGD((int16_t)y), ucal_wdMON);
         act = ucal_YearStartWD((int16_t)y);
@@ -87,8 +103,8 @@ test_ystart(void)
 
 static void test_ysplit(void) {
     const int32_t dLo = ucal_YearStartWD(INT16_MIN);
-    const int32_t dHi = ucal_YearStartWD(INT16_MAX) + 52 * 7;
-    for (int32_t rdn = dLo; rdn <= dHi; ++rdn) {
+    const int32_t dHi = ucal_YearStartWD(INT16_MAX) + 52*7;
+    for (int32_t rdn = dLo; rdn < dHi; ++rdn) {
         ucal_WeekDateT wdAct, wdExp;
         memset(&wdExp, 0, sizeof(wdExp));
         memset(&wdAct, 0, sizeof(wdAct));

@@ -34,8 +34,7 @@ ucal_WeeksInYearsWD(
     // use: w = (y * 53431 + b[c]) / 1024 as interpolation
     static const uint16_t bctab[4] = { 157, 449, 597, 889 };
 
-    int32_t  cs, cw;
-    uint32_t ci;
+    int32_t  cs, cw, ci;
 
     // split years into centuries first
     ucal_iu32DivT s100 = ucal_iu32Div(years, 100u);
@@ -53,7 +52,7 @@ ucal_WeeksInYearsWD(
     // compiler sort out the possible optimisations.
     cw = (s100.r * 53431u + bctab[ci]) / 1024u;
 
-    return ucal_u32_i32(s100.q) * 5217 + cs + cw;
+    return s100.q * 5217 + cs + cw;
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -61,7 +60,7 @@ int32_t
 ucal_YearStartWD(
     int16_t y)
 {
-    return ucal_WeeksInYearsWD((int32_t)y - 1) + 1;
+    return ucal_WeeksInYearsWD((int32_t)y - 1) * 7 + 1;
 }
 
 // ----------------------------------------------------------------------------------------------
