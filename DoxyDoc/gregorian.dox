@@ -1,0 +1,83 @@
+// -*- mode: C; c-file-style: "bsd"; c-basic-offset: 4; fill-column: 98; coding: utf-8-unix; -*-
+// ----------------------------------------------------------------------------------------------
+// µCal by J.Perlinger (perlinger@nwtime.org)
+//
+// To the extent possible under law, the person who associated CC0 with
+// µCal has waived all copyright and related or neighboring rights
+// to µCal.
+//
+// You should have received a copy of the CC0 legalcode along with this
+// work.  If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
+// ----------------------------------------------------------------------------------------------
+// µCal -- a small calendar component in C99
+// Written anno 2024 by J.Perlinger (perlinger@nwtime.org)
+//
+// This file is part of the doxygen documentation.
+// ----------------------------------------------------------------------------------------------
+
+/*! \page grecal Gregorian Civil Calendar
+
+\section grcal_yearstart Start of a Year to Rata Die
+
+For a given calendar year \f$Y\f$, we first calculate the number of elapsed years since epoch
+by reducing 1 (since 0001-01-01 is the epoch) and then do a series of divisions to obtain the
+number of leap days. Now the RDN of the 1st day of the year is easy:
+
+\f{eqnarray*}{
+    y   & \gets & Y - 1 \\
+    RDN & \gets & 365 y 
+                  +   \left \lfloor \frac{y}{4} \right \rfloor
+                  -  \left \lfloor \frac{y}{100} \right \rfloor
+                  +  \left \lfloor \frac{y}{400} \right \rfloor
+                  + 1
+\f}
+
+\section grcal_daysplit Splitting Rata Die to Year and Day-in-Year
+
+To convert a Rata Die Number \f$RDN\f$ to a tuple consisting of the calendar year \f$Y\f$ and the
+day-in-year \f$D_Y\f$, we have to split into two bi-phase cycles:
+
+ + The century cycle, which consists of 3 common centuries of 36524 days and one final
+   leap century with 36525 days.  The average length is 36524.25 days.
+ + The year cycle in a century, which consist of 3 common years with 365 days and one leap year
+   with 366 days. The average length is 365.25 days.
+
+Effectively we do two fixpoint divisions by scaling up with 4, yielding dividers of 146097
+and 1461, respectively.  (Yes, the lengths of a Julian leap cycle and the length of a full
+Gregorian calendar cycle.)  We also apply a phase shift of 0.75 (scaled: 3), because the extended
+cycle (year or century) is the _last_ in series of 4. 
+
+(There's another approach that uses 4 cycles: 400 years, 100 years, 4 years, 1 year. It's a bit easier
+to understand, bit it requires 1 floor division, 1 truncated division and two clamped truncated divisions.)
+
+We have the following quantities:
+ + \f$c_c, r_c\f$ are century cycle and century remainder
+ + \f$c_y, r_y\f$ are year cycle and year remainder
+ + \f$d_0, d_c, d_y\f$ are elapsed days since epoch / century / year, repectively
+ + \f$Y, D\f$ are calendar year and day-of-year (starting with 1)
+ + \f$LEAP\f$ is the leap year indication
+
+\f{eqnarray*}{
+    d_0 & \gets & RDN - 1 \\
+    (c_c,r_c) & \gets &    \left \lfloor \frac{4 d_0 + 3}{146097} \right \rfloor \\
+    d_c       & \gets & \left \lfloor \frac{r_c}{4} \right \rfloor \\
+    (c_y,r_y) & \gets & \left \lfloor \frac{4 d_c + 3}{1461} \right \rfloor \\
+    d_y       & \gets & \left \lfloor \frac{r_y}{4} \right \rfloor \\
+    Y         & \gets & 100 c_c + c_y + 1 \\
+    D         & \gets & d_y + 1 \\
+    LEAP      & \gets & (c_y \equiv 3 \bmod 4) \otimes (c_y \leq (96 + (c_c \bmod 4)))
+\f}
+
+Some notes on the expression above:
+ + The first division might have to be executed with extended precision, depending on the
+   requirements and numeric ranges to cover.
+ + \f$d_c\f$ is strictly not negative, so the second division can be executed as a truncated
+   division. Furthermore the numerical range is obviously limted to the size of a leap century,
+   so 32bit unsigned arithmetic fits perfectly.
+ + The leap year rule looks rather strange after the 1st term, but it works:
+    - The first expression selects the last year in all 4-year cycles in a century.
+    - The 2nd term lets year 99 of a century only pass for the last century in a
+      4-century cycle -- that's when \f$c_y \equiv 3 \pmod{4}\f$.
+
+*/
+/* -*- that's all folks -*- */

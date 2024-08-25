@@ -1,0 +1,77 @@
+// -*- mode: C; c-file-style: "bsd"; c-basic-offset: 4; fill-column: 98; coding: utf-8-unix; -*-
+// ----------------------------------------------------------------------------------------------
+// µCal by J.Perlinger (perlinger@nwtime.org)
+//
+// To the extent possible under law, the person who associated CC0 with
+// µCal has waived all copyright and related or neighboring rights
+// to µCal.
+//
+// You should have received a copy of the CC0 legalcode along with this
+// work.  If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
+// ----------------------------------------------------------------------------------------------
+// µCal -- a small calendar component in C99
+// Written anno 2024 by J.Perlinger (perlinger@nwtime.org)
+//
+// This file is part of the doxygen documentation.
+// ----------------------------------------------------------------------------------------------
+
+/*! \page julcal Julian Civil Calendar
+
+The leap year rule is simple: Every 4th year is a leap year.  That's it. So the calendar
+consists of cycles 1461 days each, with an avarage year length of 365.25 days.
+
+Unfortunately, 0001-01-01(Julian) is not the same day as 0001-01-1(Gregorian); the Gregorian
+calendar reform made an astronomical correction to fix the extra leap days since 324CE,
+not an algorithmic correction to fix the extra leap days since the Christian calendar epoch.
+There are two extra days.
+
+The definition of the transistion between Julian and Gregorian calendar is as follows:
+    + Thursday, 1582-10-04(Julian) is the last day of the Julian calendar.
+    + Friday, 1582-10-15(Gregorian) is the first day of the Gregorian calendar.
+
+Of course, both calenders can be extended in both directions, beyond end or before start,
+and so the following equalities must hold:
+    + 1582-10-4(Julian) must be the same day as 1582-10-14(Gregorian)
+    + 1582-10-5(Julian) must be the same day as 1582-10-15(Gregorian)
+
+\section jlcal_yearstart Start of a Year to Rata Die
+
+For a given calendar year \f$Y\f$, we first calculate the number of elapsed years since epoch
+by reducing 1 (since 0001-01-01 is the epoch) and then do a simple divisions to obtain the
+number of leap days. Now the RDN of the 1st day of the year is easy:
+
+\f{eqnarray*}{
+    y   & \gets & Y - 1 \\
+    RDN & \gets & 365 y 
+                  + \left \lfloor \frac{y}{4} \right \rfloor
+                  - 1
+\f}
+
+\section jlcal_daysplit Splitting Rata Die to Year and Day-in-Year
+
+To convert a Rata Die Number \f$RDN\f$ to a tuple consisting of the calendar year \f$Y\f$ and the
+day-in-year \f$D_Y\f$, we have to split into one bi-phase cycle of 4 years.  This cycle consists
+of 3 common years with 365 days and one leap year with 366 days.
+
+We have the following quantities:
+ + \f$c_y, r_y\f$ are year cycle and year remainder
+ + \f$d_0, d_y\f$ are elapsed days since epoch and start of year year, repectively
+ + \f$Y, D\f$ are calendar year and day-of-year (starting with 1)
+ + \f$LEAP\f$ is the leap year indication
+
+\f{eqnarray*}{
+    d_0 & \gets & RDN + 1 \\
+    (c_y,r_y) & \gets & \left \lfloor \frac{4 d_0 + 3}{1461} \right \rfloor \\
+    d_y       & \gets & \left \lfloor \frac{r_y}{4} \right \rfloor \\
+    Y         & \gets & c_y + 1 \\
+    D         & \gets & d_y + 1 \\
+    LEAP      & \gets & (c_y \equiv 3 \bmod 4)
+\f}
+
+Some notes on the expression above:
+ + The division might have to be executed with extended precision, depending on the
+   requirements and numeric ranges to cover.
+ + The leap year rule selects the last year in all 4-year cycles in a century.
+
+*/
+// -*- that's all folks -*-

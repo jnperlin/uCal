@@ -1,0 +1,86 @@
+// -*- mode: C; c-file-style: "bsd"; c-basic-offset: 4; fill-column: 98; coding: utf-8-unix; -*-
+// ----------------------------------------------------------------------------------------------
+// µCal by J.Perlinger (perlinger@nwtime.org)
+//
+// To the extent possible under law, the person who associated CC0 with
+// µCal has waived all copyright and related or neighboring rights
+// to µCal.
+//
+// You should have received a copy of the CC0 legalcode along with this
+// work.  If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
+// ----------------------------------------------------------------------------------------------
+// µCal -- a small calendar component in C99
+// Written anno 2024 by J.Perlinger (perlinger@nwtime.org)
+//
+// This file is part of the doxygen documentation.
+// ----------------------------------------------------------------------------------------------
+
+/*! \page gpsdate GPS Time scale
+
+The GPS system measures time in weeks since Sun,1980-01-06 and seconds since start of week. The
+primary signal transmits the week truncated to 10 bits, so there's an era rollover every 1024 weeks,
+roughly every 19.6 years.
+
+\section gpsrawmap Era Mapping for raw GPS time
+
+The GPS time scale was in sync with UTC at the epoch, but it does not do leap seconds; the number
+of leap seconds inserted since epoch (_not_ the total number of leap seconds in UTC!) is also
+available from the data stream.
+
+But since the time stamp has a period of only 1024 weeks, we need some kind of reference when
+converting either to a \c time_t value or a date/time pair.  This can be either a date (as RDN)
+or a UNIX time stamp; in both cases the procedure is similar:
+
+  + apply the leap second correction
+  + align the GPS cycle to the reference cycle
+  + calculate the cycle difference from base to current time, modulo the cycle length
+  + add the cycle difference to the base reference 
+
+Of course,  the modulo operation is the expensive part here, and it has to be the mathematical
+modulus, retrieved by a floor division.
+
+
+\section gpsgcmap Era Mapping of Calendar Dates
+
+Most GNSS receivers emit time/date information in the civil calendar format, as YY-MM-DD and
+hh-mm-ss.  Since the receiver also needs a base reference to do so, this is often baked into
+firmware -- with the the consequence that one cannot necessarily trust the date information!
+
+Even if it is simple to map the 2-digit year range from 00 to 99 into 1980..2079, this time span
+covers 5 complete GPS eras, and we don not know into which and how the receiver maps the raw
+timing information.
+
+So it's best to convert that time stamp back to seconds, get the difference to the GPS epoch,
+reduce modulo 1024 weeks, and map the resulting cycle time back to a full time stamp using
+a reference.
+
+
+\section gpsrefdate How to Choose a Reference Datum
+
+This is plugging information from thin air -- every choice has pros and cons.
+
+ + Bake in your own time stamp, e.g. by using the compile time of your application. Under
+   the assumption that the build system was roughly time synced, this will give you peace 
+   for the next 19 years.  That's of course what GNSS chip manufactures do, but at least
+   it's _your_ choice, and you can rebuild more often.
+
+ + Make the reference based on the current system time, with some slack provided to step
+   the time back.  If the system is roughly in sync (eyball & wristwatch suffice) this will
+   sync PLL-like.  Of course, if you're too far off, the lock will happen to the wrong era.
+
+ + Make it a configurable. The most sure-fire way, but an option that needs care every 10
+   or 20 years might need some active monitoring to remin someone that it's time to define
+   a new base. (Pun not intended)
+
+IMHO, using a build stamp as fallback and something configurable (environment, config file,
+you name it) makes the most sense for something in the "embedded" class. It needs occasional
+maintenance, which is admittedly a pain, but it gives predictable and reproducible results -- and
+there's only one location where adjustment is necessary.
+
+OTOH, for something running on a full-fledged system, with battery-backed RTC (BIOS clock or such) and
+an OS, mapping around the current system time is a good option.
+
+Choose wisely
+
+*/
+/* -*- that's all folks -*- */

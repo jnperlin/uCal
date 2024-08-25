@@ -1,0 +1,32 @@
+// -*- mode: C; c-file-style: "bsd"; c-basic-offset: 4; fill-column: 98; coding: utf-8-unix; -*-
+// ----------------------------------------------------------------------------------------------
+// µCal by J.Perlinger (perlinger@nwtime.org)
+//
+// To the extent possible under law, the person who associated CC0 with
+// µCal has waived all copyright and related or neighboring rights
+// to µCal.
+//
+// You should have received a copy of the CC0 legalcode along with this
+// work.  If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
+// ----------------------------------------------------------------------------------------------
+// µCal -- a small calendar component in C99
+// Written anno 2024 by J.Perlinger (perlinger@nwtime.org)
+//
+// This file is part of the doxygen documentation.
+// ----------------------------------------------------------------------------------------------
+
+/*! \page annotations Formula Notations
+
+The following notations are used in the formulas used in this documentation:
+
+ + 
+   \f[  (q,r) \gets \left \lfloor \frac{n}{d} \right \rfloor \f]
+   (tuple assignment with division) assigns the quotient \f$q\f$ and the remainder \f$r\f$ of
+   a floor division. (This saves us from repeating a lot of expressions!)
+
+ + \f[  (q,r) \gets \left \lfloor \frac{n}{d} \right \rfloor _0 ^3 \f]
+   (clamped floor division) denotes a floor division, but with the quotient clamped to the bounds
+   attached on the right side. The remainder is calculated from the clamped quotient!
+
+*/
+// -*- that's all folks-*-

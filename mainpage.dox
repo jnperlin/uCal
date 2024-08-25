@@ -1,0 +1,88 @@
+// ----------------------------------------------------------------------------------------------
+// µCal by J.Perlinger (perlinger@nwtime.org)
+//
+// To the extent possible under law, the person who associated CC0 with
+// µCal has waived all copyright and related or neighboring rights
+// to µCal.
+//
+// You should have received a copy of the CC0 legalcode along with this
+// work.  If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
+// ----------------------------------------------------------------------------------------------
+// µCal -- a small calendar component in C99
+// Written anno 2024 by J.Perlinger (perlinger@nwtime.org)
+//
+// This file is part of the doxygen documentation.
+// ----------------------------------------------------------------------------------------------
+
+/*! \mainpage  uCal -- a small calendar component
+
+\section calmath Calendar Mechanics
+
+This component deals with a few time scales:
+
+ + The \ref grecal is what most Westerners mean when they talk about
+   a calendar.
+ + The \ref julcal predates the Gregorian Calendar; it is still used in east-europe
+   orthodox christian religeous systems.
+ + The \ref isocal. Not so widely used; Years have always 52 or 53 full weeks,
+   and the year always starts on a Monday. (It's the Monday closest to the year start of
+   the year with the same number in the Gregorian Calendar.)
+ + The \ref gpsdate starts at 1986-01-06T00:00:00Z and represents time typically in weeks
+   since epoch \f$ \pmod{1024} \f$ and seconds since start of week.  That alone makes for
+   some nice mapping problems, and technical deficiencies of many GNSS receivers nicely
+   compound the original problem.
+ + The \ref ntpdate with an epoch of 1900-01-01T00:00:00Z. Counts seconds since epoch
+   \f$ \pmod{2^{32}} \f$.  Again, some mapping problems arise, and the period is _not_
+   expressible in any other calendar-related period.  Hence, all calculations must be
+   done in seconds.
+
+A 64bit \c time_t is supported, but the range of calendar years is limited to \c int16_t.
+The intended use is for technical applications, so this should definitely suffice. The
+algorithms themselves are capable of _any_ width, but requiring a multi-precision package
+is on the DO-NOT list, and will remain there!
+
+
+\section ccalbasic Christian Calendar Basics
+
+There's a page dedicated to details, see \ref ccalcommon. But for starters, here a short overview.
+
+Most calendars use a day as the obvious basic unit, and the Chrstian Era calendars group them into
+weeks, months of different lengths, and years of different lengths:
+
+ + a week has 7 days
+ + a year has 365 or 366 days
+ + a year consists of 12 month with a length of 28, 29, 30 or 31 days.
+ + a leap day is inserted at the end of February, which is the 2nd month of the year.
+
+
+Julian and Gregorian calender only differ in their leap year rule.
+ + In the Julian Calendar, every 4th year is a leap year. I.o.w., the year number must be
+   divisible by 4.
+ + In the Gregorian Calendar, for year number to denote a leap year, it has the additional
+   constraint that it must be either divisible by 400 or _not_ divisible by 100.
+
+The ISO8601 Week Calendar only has years of 52 or 53 full weeks, and the year starts with a Monday.
+
+GPS uses a continuous count of weeks, but truncates the result. The epoch is aligned to the start
+of a day in the UTC time scale, so for some calculations the fraction of a day can be omitted.
+
+NTP uses a truncated continuous count of seconds. This makes many calculations very easy to implement
+and difficult to understand.
+
+
+\section impdetail Implementation details
+
+Calendar calculations thrieve on division operations. Forunately the dividers are constants,
+albeit often very odd ones. (In the metaphorical _and_ the mathematical sense!)
+
+So we have to do many divisions using constants, and we have to do divisions rounding towards
+negative infinity. "C" mandates rounding towards zero (aka truncation), and that alone can
+create lots of pitfalls.
+
+Integer conversion is another issue. While it looks easy at first glance, and a simple cast
+does _something_, it might just not be exactly what you expect or need.  It needs a bit of
+hardening the get it right, reproducible, and compiler-independent.
+
+See \ref implementation for details.
+*/
+// -*- that's all folks-*-

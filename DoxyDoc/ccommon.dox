@@ -1,0 +1,153 @@
+// -*- mode: C; c-file-style: "bsd"; c-basic-offset: 4; fill-column: 98; coding: utf-8-unix; -*-
+// ----------------------------------------------------------------------------------------------
+// µCal by J.Perlinger (perlinger@nwtime.org)
+//
+// To the extent possible under law, the person who associated CC0 with
+// µCal has waived all copyright and related or neighboring rights
+// to µCal.
+//
+// You should have received a copy of the CC0 legalcode along with this
+// work.  If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
+// ----------------------------------------------------------------------------------------------
+// µCal -- a small calendar component in C99
+// Written anno 2024 by J.Perlinger (perlinger@nwtime.org)
+//
+// This file is part of the doxygen documentation.
+// ----------------------------------------------------------------------------------------------
+
+/*! \page ccalcommon Common Calendar Properties
+
+A year is divided into 12 months of uneven length, with a total sum of 365 days for
+common years and 366 days in leap years.  These days the year starts with January, but
+the Romans initially started the year with Martius (March). That's why the December ('Decembris')
+is the tenth month, originally. That's also why February has the leap day: the leap
+day was added at the _end_ of the year! (And some calculations become indeed easier
+when shifting the start of the year for calculatory reasons!)
+
+This whole stuff is hard to handle for computers (and astronomers, too!), so it's  easier
+to count a single scalar quantity.  Seconds, days or weeks are handy, as they still have
+a conceptional relationship to our time / calendar scales, and days are most useful.
+
+\section daycount Counting days
+
+So, when do we start? This components starts with 0001-01-01 in the proleptic Gregorian
+Calendar as day 1.  In their invaluable book "Calendrical Calculations", Rheingold & Dershowitz
+call this the "Rata Die", the count of days. We use 'rdn' or 'Rdn' as entity names or part
+of entity names to hint that there is some relation to a Rata Die Number. (Though "Rata Die Number"
+is redundant in the same way as "LCD display".)
+
+Other choices would be possible, of course, like Julian Day Numbers or modified Julian Days.
+But that's just a fixed offset, and one has to start _somewhere_ ...
+
+
+\section montconv Converting months
+
+The uneven gait of the 28/29/30/31 rhythm looks difficult to tackle at first glance; especially
+the February with the leap-year depending length in the middle of the year is a challenge.
+But after some analysis, it's not so bad after all.
+
+  + We can use tabulated data for the accumulated month lengths and index with the month.
+  + We can use linear interpolations of the form \f$d \gets \left \lfloor \frac{a M + b}{c} \right \rfloor \f$
+    with some pre/post conditioning: We either assume a February has 30 days, or we shift the start
+    of year.
+
+Shifting the year start moves February to the end of the year; now all months but the last have the
+same length for common and leap years. That means we don't need explicit knowledege about leap
+years in the conversion, but in the end we have to compensate for the shift somehow. (It also Counts
+the size of data to tabulate to half!)
+
+Finding coefficients for the linear interpolation just number-crunching, and there's an infinite
+set of coefficient combinations to draw from.  Of special interest is the one with the smallest
+divider and the one where the divider is the smallest possible power of two.  Here we prefer the
+second variant, as we can evaluate the division as shift operation.
+
+\subsection monthconv_m2d Months to Days-in-Year
+
+We use the shifted calendar approach here. Let's start by simply adding 10 months before we start
+_any_ calculations, and of course we have to normalise the month value to be in range again.
+This normalisation carries over into the year in 10 out of 12 cases, which affects the leap year
+evaluation and is the reason why it has to be done early.
+
+These 10 months are the difference from March,1st to January,1st of the following year, which is
+always 306 days. We have to remove them in the end again.
+
+Now, with the vagrant February at the end, we have several options. Evaluate _one_ of the
+following expressions, where \f$ 1 \leq M' \leq 12 \f$ is the *shifted* month and \f$d_y\f$ is
+the number of _elpased days before the start of the month_:
+
+\f{eqnarray*}{
+    d_y   & \gets & (0,31,61,92,122,153,184,214,245,275,306,337)[M' - 1] \\
+    d_y & \gets & \left \lfloor \frac{153(M' - 1) + 2}{5} \right \rfloor \\
+    d_y & \gets &  \left \lfloor \frac{979(M' - 1) + 16}{32} \right \rfloor
+\f}
+
+ + The 1st expression is a simple table lookup.
+ + The 2nd expression is a linear interpolation, the one with the smallest integer coefficients.
+ + The 3rd expression is a linear interpolation with the smalles divider that is a power of two.
+
+We use the 3rd form, as the division can be executed as a shift. (It's also possible to scale this
+up so the the result can be gained by a full byte or word extraction! That can be useful if the
+target has no barrel shifter to execute shifts quickly.)
+
+And, well, yes, that's it!
+
+
+\subsection monthconv_d2m Days-in-Year to Months
+
+When converting in this direction, the _unshifted_ calendar is a bit more convenient.  While
+conversions now _need_ to know if the conversion is for a leap year or a common year, this
+information can be easily obtained as a byproduct when splitting a linear day count into years and
+day-in-year, so no extra expensve calculations are needed.
+
+But now the vagrant February is in the middle of the year, and that makes it slightly awkward.
+We still have two major options how to proceed.
+
+\subsubsection monthconv_m2d_tab Using tabulated month length sums
+
+This doesn't lend itself well to LaTeX formulas, so here comes a code block that is not quite
+ "C":
+
+\code{".c"}
+    struct {
+        unsigned month;
+        unsigned mday;
+    }
+    yd2month(unsigned yday, bool leapYear)
+    {
+        static const unsigned short monthLenSums[2][13] = {
+            {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365},
+            {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366}
+        };
+
+        unsigned m, d;
+        m = yday >> 5;
+        m += (yday >= monthLenSums[leaYear & 1][m + 1]);
+        d = yday - monthLenSums[leaYear & 1][m];
+        return { .month = m+1, .mday = d+1}
+    }
+\endcode
+
+It works by first dividing the days by 32, which yields an initial estimation that's never to high
+and never more off than by one. A simple correction step then moves it into the right slot, and that's it!
+
+
+\subsubsection monthconv_m2d_mul Using linear interpolation
+
+This is not possible when trying to apply it directly: The vagrant February spoils it!  But that doesn't mean
+all is lost.  Once we assume a year has February with a fix length of 30 days, interpolation works! But of course
+some preconditioning is needed: Under the new scheme, the 1st of March is now always 61 days after the start of
+the modified year, while for a common year it is day 59 and for a leap year it is day 60.
+
+This means we have to add 2 to any day number beyond 59 for common years and 1 to any day number
+beyond 60 for leap years.  But then we can again do the mul/shift operations:
+
+\f{eqnarray*}{
+    m & \gets & \left \lfloor \frac{67 d_y + 32}{2048} \right \rfloor \\
+    d_m & \gets & dy - \left \lfloor \frac{489 m + 8}{16} \right \rfloor
+\f}
+
+If multiplications and shifts are fast, this can easily outperform the table lookup, fast as it already is.
+
+
+*/
+// -*- that's all folks -*-
