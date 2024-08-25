@@ -48,7 +48,7 @@ ucal_WeeksInYearsWD(
     cs = ucal_i32Asr(ci, 2);
     ci = ci & 3u;
 
-    /// Get weeks in century. Can use plain division here as all ops are >= 0, and let the
+    // Get weeks in century. Can use plain division here as all ops are >= 0, and let the
     // compiler sort out the possible optimisations.
     cw = (s100.r * 53431u + bctab[ci]) / 1024u;
 
@@ -81,8 +81,7 @@ ucal_SplitEraWeeksWD(
     // 20871' under floor division rules in the first step.
     //
     // This is of course (again) susceptible to internal overflow if coded directly in 32bit. And
-    // again we use 64bit division on a 64bit target and exact division after calculating the
-    // remainder first on a 32bit target. With the smaller divider, that's even a bit neater.
+    // again we use 64bit division on a 64bit target and extended division otherwise.
     if (sizeof(size_t) > sizeof(int32_t)) {
         /* Full floor division with 64bit values. */
         size_t m = -(weeks < 0);
@@ -104,8 +103,7 @@ ucal_SplitEraWeeksWD(
   ci = Q & 3u;
   cc = ucal_u32_i32(Q);
 
-  /* Split off years; sw >= 0 here! The scaled weeks in the years are scaled up by 157 afterwards.
-   */
+  // Split off years; sw >= 0 here! The scaled weeks in the years are scaled up by 157 afterwards.
   sw = (sw / 4u) * 157u + bctab[ci];
   cy = sw / 8192u; /* sw >> 13 , let the compiler sort it out */
   sw = sw % 8192u; /* sw & 8191, let the compiler sort it out */
