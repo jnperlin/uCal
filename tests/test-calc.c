@@ -21,6 +21,7 @@
 #include <sys/random.h>
 #include <time.h>
 #include <unity.h>
+#include <string.h>
 
 #include "ucal/common.h"
 #include "ucal/gregorian.h"
@@ -170,10 +171,10 @@ static void test_BuildDate(void) {
 
 #define RDN(y, m, d) ucal_DateToRdnGD((y), (m), (d))
 
+#define DDD(a, b) (ucal_DateToRdnGD a - ucal_DateToRdnGD b)
 #define DDT(a, b) ((ucal_DateToRdnGD a - ucal_DateToRdnGD b) * (time_t)86400)
 
-static void test_ntpDate(void)
-{
+static void test_ntpDate(void) {
     time_t act, exp, base;
     uint32_t ntpSec;
 
@@ -198,8 +199,28 @@ static void test_ntpDate(void)
     TEST_ASSERT_EQUAL(0, ntpSec);
 }
 
-static void test_gpsDate(void)
-{
+static void test_gpsDate1(void) {
+    int32_t       base;
+    ucal_iu32DivT exp, act;
+
+    // era zero:
+    base = RDN(1980, 1, 6);
+    exp = (ucal_iu32DivT){ .q = base, .r = 0 };
+    act = ucal_GpsMapRaw1(0, 0, 0, base);
+    TEST_ASSERT_EQUAL(0, memcmp(&exp, &act, sizeof(ucal_iu32DivT)));
+
+    // era one:
+    base += 1024 * 7;
+    exp = (ucal_iu32DivT){ .q = base, .r = 0 };
+    act = ucal_GpsMapRaw1(0, 0, 0, base);
+    TEST_ASSERT_EQUAL(0, memcmp(&exp, &act, sizeof(ucal_iu32DivT)));
+
+    base -= 100 * 7;
+    act = ucal_GpsMapRaw1(0, 0, 0, base);
+    TEST_ASSERT_EQUAL(0, memcmp(&exp, &act, sizeof(ucal_iu32DivT)));
+}
+
+static void test_gpsDate2(void) {
     static const int32_t wcycle = INT32_C(604800);
 
     time_t base, exp, act;
@@ -234,6 +255,7 @@ int  main(int argc, char **argv)
     RUN_TEST(test_reform2);
     RUN_TEST(test_rellez);
     RUN_TEST(test_ntpDate);
-    RUN_TEST(test_gpsDate);
+    RUN_TEST(test_gpsDate1);
+    RUN_TEST(test_gpsDate2);
     return UNITY_END();
 }

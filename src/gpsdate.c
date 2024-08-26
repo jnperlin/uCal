@@ -77,8 +77,8 @@ ucal_GpsMapRaw1(
         baseRdn = UCAL_rdnGPS;
     }
 
-    // reduce days to the difference to the base
-    days = ucal_iu32SubDiv(days, baseRdn, (7 * 1024)).r;
+    // reduce days to the difference to the base (mapping days to RDN on the fly)
+    days = ucal_iu32SubDiv((days + 1), baseRdn, (7 * 1024)).r;
 
     // Add days to base, checking for potential overflow
     if (days > (uint32_t)INT32_MAX - (uint32_t)baseRdn) {
@@ -167,8 +167,8 @@ ucal_GpsFullYear(
 {
     int16_t z;
     if (y < 1980) {
-	// If we have a valid day-of-week, try inverting Zeller's congruence to get the year.
-	// Otherwise just do a fixed mapping to 1980..2079.
+	    // If we have a valid day-of-week, try inverting Zeller's congruence to get the year.
+	    // Otherwise just do a fixed mapping to 1980..2079.
         y = (int16_t)ucal_iu32Div(y, 100u).r;
         if ((wd >= 0) && (1980 <= (z = ucal_RellezGD(y, m, d, wd, 1980)))) {	    
             y = z;
