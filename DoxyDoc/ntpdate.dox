@@ -17,5 +17,19 @@
 
 /*! \page ntpdate NTP Time scale
 
+The NTP time scale is simple enough: Continuous seconds since 1900-01-01T00:00:00 UTC. But:
+
+ + On wire, the value is transmitted \f$ \pmod(2^{32}) \f$, which makes it an era mapping problem
+   after somewhere in 2036 CE.
+ + The NTP spec never mentioned leap seconds.  Most (all?) NTP servers serve time based on UTC by
+   agreement and ignore the leap seconds issue.  There's pros and cons to that, but the calculations
+   become easier this way.
+
+So the only two things that have to be done frequently are mapping from UNIX time scale to NTP scale and
+reversed. Which in one case is a truncation to unsigned 32bit and adding a constant; in the opposite
+direction it is unfolding an era in NTP time scale to the UNIX epoch around a pivot value.
+
+It doesn't make much sense to go before the UNIX epoch, though.
+
 */
 // -*- that's all folks -*-
