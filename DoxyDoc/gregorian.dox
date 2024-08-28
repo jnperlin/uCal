@@ -12,10 +12,30 @@
 // µCal -- a small calendar component in C99
 // Written anno 2024 by J.Perlinger (perlinger@nwtime.org)
 //
-// This file is part of the doxygen documentation.
+// This file is part of the Doxygen documentation.
 // ----------------------------------------------------------------------------------------------
 
 /*! \page grecal Gregorian Civil Calendar
+
+\section grcal_leapyear When is a Year a Leap Year?
+
+The leap year rule can coded directly to he rules:
+\f{equation}{
+  LEAP \gets (0 \equiv Y \bmod 4) \land ((0 \not\equiv Y \bmod 100) \lor (0 \equiv Y \bmod 400)) 
+\f}
+
+But there's alternative way:
+\f{equation}{
+  LEAP \gets (0 \equiv Y \bmod 4) \land ((0 \equiv Y \bmod 16) \lor (0 \not\equiv Y \bmod 25)) 
+\f}
+
+This is simply based on the fact that \f$LCM(16,100) = 400\f$. So, any year that is divisible by 16
+is automatically a leap year.  For all other years, the divisibility by 25 is equivalent to the
+divisibility by 100, since the common factor of 4 is already asserted by the 1st term.
+
+This only requires one true division. (CLANG and GCC have both been observed to somehow fuse divisions
+by 100 and 400 in clever ways, but it's still more effort than doing two bit-tests.)
+
 
 \section grcal_yearstart Start of a Year to Rata Die
 
@@ -42,13 +62,14 @@ day-in-year \f$D_Y\f$, we have to split into two bi-phase cycles:
  + The year cycle in a century, which consist of 3 common years with 365 days and one leap year
    with 366 days. The average length is 365.25 days.
 
-Effectively we do two fixpoint divisions by scaling up with 4, yielding dividers of 146097
-and 1461, respectively.  (Yes, the lengths of a Julian leap cycle and the length of a full
-Gregorian calendar cycle.)  We also apply a phase shift of 0.75 (scaled: 3), because the extended
-cycle (year or century) is the _last_ in series of 4. 
+Effectively we do two fix-point divisions by scaling up with 4, yielding dividers of 146097 and
+1461, respectively.  (Yes, the lengths of a Julian leap cycle and the length of a full Gregorian
+calendar cycle.)  We also apply a phase shift of 0.75 (scaled: 3), because the extended cycle
+(year or century) is the _last_ in series of 4.
 
-(There's another approach that uses 4 cycles: 400 years, 100 years, 4 years, 1 year. It's a bit easier
-to understand, bit it requires 1 floor division, 1 truncated division and two clamped truncated divisions.)
+(There's another approach that uses 4 cycles: 400 years, 100 years, 4 years, 1 year. It's a bit
+easier to understand, bit it requires 1 floor division, 1 truncated division and two clamped
+truncated divisions.)
 
 We have the following quantities:
  + \f$c_c, r_c\f$ are century cycle and century remainder
@@ -65,19 +86,20 @@ We have the following quantities:
     d_y       & \gets & \left \lfloor \frac{r_y}{4} \right \rfloor \\
     Y         & \gets & 100 c_c + c_y + 1 \\
     D         & \gets & d_y + 1 \\
-    LEAP      & \gets & (c_y \equiv 3 \bmod 4) \otimes (c_y \leq (96 + (c_c \bmod 4)))
+    LEAP      & \gets & (c_y \equiv 3 \bmod 4) \land (c_y \leq (96 + (c_c \bmod 4)))
 \f}
 
-Some notes on the expression above:
+Some notes on the expressions above:
  + The first division might have to be executed with extended precision, depending on the
    requirements and numeric ranges to cover.
  + \f$d_c\f$ is strictly not negative, so the second division can be executed as a truncated
    division. Furthermore the numerical range is obviously limted to the size of a leap century,
    so 32bit unsigned arithmetic fits perfectly.
  + The leap year rule looks rather strange after the 1st term, but it works:
-    - The first expression selects the last year in all 4-year cycles in a century.
+    - The 1st term selects the last year in all 4-year cycles in a century: 3,7,11...95,99
     - The 2nd term lets year 99 of a century only pass for the last century in a
       4-century cycle -- that's when \f$c_y \equiv 3 \pmod{4}\f$.
-
+ + \f$d_0,c_c,Y\f$ are signed quantities and can be negative. All other quantities are strictly
+   non-negative.
 */
 /* -*- that's all folks -*- */

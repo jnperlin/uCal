@@ -12,21 +12,42 @@
 // µCal -- a small calendar component in C99
 // Written anno 2024 by J.Perlinger (perlinger@nwtime.org)
 //
-// This file is part of the doxygen documentation.
+// This file is part of the Doxygen documentation.
 // ----------------------------------------------------------------------------------------------
 
 /*! \page annotations Formula Notations
 
 The following notations are used in the formulas used in this documentation:
 
- + 
-   \f[  (q,r) \gets \left \lfloor \frac{n}{d} \right \rfloor \f]
-   (tuple assignment with division) assigns the quotient \f$q\f$ and the remainder \f$r\f$ of
-   a floor division. (This saves us from repeating a lot of expressions!)
-
- + \f[  (q,r) \gets \left \lfloor \frac{n}{d} \right \rfloor _0 ^3 \f]
-   (clamped floor division) denotes a floor division, but with the quotient clamped to the bounds
-   attached on the right side. The remainder is calculated from the clamped quotient!
+<table>
+  <tr><th align="center">symbolic<th>meaning</tr>
+  <tr>
+    <td align="center">\f[ (q,r) \gets \left \lfloor \frac{n}{d} \right \rfloor \f]
+    <td>(tuple assignment with division) assigns the quotient \f$q\f$ and the remainder \f$r\f$ of
+      a floor division. (This saves us from repeating a lot of expressions!)
+  <tr>
+    <td align="center">\f[ (q,r) \gets \left \lfloor \frac{n}{d} \right \rfloor _0 ^3 \f]
+    <td>(tuple assignment with clamped division) denotes a floor division, but with the quotient clamped to the bounds
+      attached on the right side. The remainder is calculated from the clamped quotient.
+  <tr>
+    <td>\f[ (v_0,v_1,...,v_n)[i] \f]
+    <td>(list indexing) get the element \f$v_i\f$ from the list
+  <tr>
+    <td align="center">\f$ \land \f$
+    <td>logical conjunction, the "and" operation
+  <tr>
+    <td align="center">\f$ \lor \f$
+    <td>logical disjunction, the "or" operation
+  <tr>
+    <td align="center">\f$Y,M,D,W\f$
+    <td>Ordinal Calendar Units for year, month, day and weeks: The position of the quantity, usually starting
+      at the number One.
+  <tr>
+    <td align="center">\f$y,m,d,w\f$
+    <td>Cardinal Calendar Units for year, month, day and weeks: How many times the quantity has elapsed
+      since origin. These start with zero.<br>
+      As an example: At 2000-02-29, 1999 years, 1 month and 28 days have been elapsed before this date.
+</table>
 
 */
 // -*- that's all folks-*-
