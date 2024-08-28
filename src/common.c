@@ -106,10 +106,6 @@ ucal_BuildDateRdn(void)
 }
 
 // -------------------------------------------------------------------------------------
-// This is a single division core step a la Granlund/Möller:
-//    2³¹ <= d < 2³²                (divider is normalised)
-//    v == (2⁶⁴ - 1) // d - 2³²     (approximation of the fix-point inverse)
-//    0 <= u1 < d                   (quotient must fit in limb)
 ucal_u32DivT
 ucal_u32DivGM(
     uint32_t u1,

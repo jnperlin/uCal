@@ -35,7 +35,7 @@ ucal_NtpToTime(
         } else {
             tbase = 0;
         }
-        // now do a periodic expansiom (mod 2³²). Which is dead-pan easy :)
+        // now do a periodic expansion (mod 2³²). Which is dead-pan easy :)
         secs += UCAL_sysPhiNTP;     // align NTP scale to Unix scale (mod 2³² implicitt!)
         secs -= tbase;              // get cycle difference          (mod 2³² implicitt!)
         return tbase + secs;        // add difference to base, and that's it!

@@ -47,8 +47,8 @@ ucal_DaysToYearsJD(
     // bi-phase split with 1461 (the days of a full leap cycle), and we have to add 2 to days to
     // compensate the origin difference of the Julian calendar.
     //
-    // So, we want to calculate ((rdn - 1 + 2) * 4 + 3) / 1461, which boild down to
-    // (rdn * 4 + 7) / 1461.  The divdend will be negativ if and only if rdn < -1.
+    // So, we want to calculate ((rdn - 1 + 2) * 4 + 3) / 1461, which boils down to
+    // (rdn * 4 + 7) / 1461.  The dividend will be negative if and only if rdn < -1.
     if (sizeof(size_t) > sizeof(int32_t)) {
         // Direct scaled division floor via 'size_t' variables 
         const size_t m = -(rdn < -1);

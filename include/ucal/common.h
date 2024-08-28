@@ -52,7 +52,7 @@ typedef enum {
 // true for the other direction. Many (most?) compilers do it the pattern-preserving way
 // and that's the easiest option.  But at least on two's complement machines there's a
 // way that does not exhibit UB and does not rely on the goodwill of the compiler.
-// (Note: Clang & GCC are clever enough to recognise the pattern and elide the operation,
+// (Note: Clang & GCC are clever enough to recognize the pattern and elide the operation,
 // resulting in a simple MOVE or even nothing!)
 // -------------------------------------------------------------------------------------
 
@@ -65,7 +65,7 @@ static inline int64_t ucal_u64_i64(uint64_t v) {
 }
 
 // -------------------------------------------------------------------------------------
-// Extraction lo/hi DWORD from a 64bit value.  Whiel formally using shifts and masks,
+// Extraction lo/hi DWORD from a 64bit value.  While formally using shifts and masks,
 // most compilers will just do the "right thing (TM)" by selecting register (parts).
 // -------------------------------------------------------------------------------------
 
@@ -320,7 +320,7 @@ extern ucal_TimeDivT ucal_TimeToRdn(time_t tt);
 /// This uses the UNSHIFTED calender and therefore needs the leap year indicator.
 /// @param ed   elapsed days
 /// @param isLY year is a leap year
-/// @return 
+/// @return     tupe with monts as quotient and days in month as remainder
 extern ucal_iu32DivT ucal_DaysToMonth(uint_fast16_t ed, bool isLY);
 
 // -------------------------------------------------------------------------------------
@@ -332,7 +332,7 @@ extern ucal_iu32DivT ucal_DaysToMonth(uint_fast16_t ed, bool isLY);
 /// 
 /// @note This uses the SHIFTED calendar starting with March!
 /// @param m    calendar month (can be off-scale)
-/// @return 
+/// @return     number of elapsed days in these elapsed months
 extern ucal_iu32DivT ucal_MonthsToDays(int16_t m);
 
 // -------------------------------------------------------------------------------------

@@ -12,20 +12,20 @@
 // µCal -- a small calendar component in C99
 // Written anno 2024 by J.Perlinger (perlinger@nwtime.org)
 //
-// This file is part of the doxygen documentation.
+// This file is part of the Doxygen documentation.
 // ----------------------------------------------------------------------------------------------
 
 /*! \page isocal ISO8601 Week Calendar
 
-The basic definition boils downto this:
+The basic definition boils down to this:
 
  + The year in the ISO Week Calendar starts a the Monday closest to Jan,1st if the Gregorian Calendar
-   year with the same number. (Obviously, this might be _bofere_ the start of a Gregorian year.)
+   year with the same number. (Obviously, this might be _before_ the start of a Gregorian year.)
  + As a result, the year has 52 or 53 full weeks.
 
 There are three nice properties of this calendar:
 
- + Since the Gregoriun calendar has a period of 400 years, so has the ISO8601 Week Calendar.
+ + Since the Gregorian calendar has a period of 400 years, so has the ISO8601 Week Calendar.
  + Since 0001-01-01 is a Monday, there's no cycle shift: For any quadricentennial year,
    yyyy-w1-1 and yyyy-01-01 are the same day.
  + Since it is week-aligned, we can use weeks instead of days as basic calendar units, reducing
@@ -35,16 +35,16 @@ There are three nice properties of this calendar:
 \section iwcal_yearstart Start of a Year to Rata Die
 
 In this direction we directly use the Gregorian calendar, as we have functions to calculate the start
-of a year as RDN and functions to find any given day-of-week closest to this day.
-
+of a year as RDN and functions to find any given day-of-week closest to this day.  Calculating the
+Monday closest to the start of a Gregorian Calendar year is easy.
 
 There's another way that is more arcane, but has its counterpart in the split of weeks.  It is based
 on the inspection of the tabulated data for 400 years, and similar to the tabulated data for the
 conversion from months to a days and reverse, there's a way that does linear interpolation.
 
-Unfortunately, this needs a small table of 4 numbers: While the multiplier and diveider can be the
-same for any century, the offset (phase shift)  needs to be chosen according to the index of a century
-in the 4-century cycle.  The centennial and quadirecentennial leap year rules get in the way here.
+Unfortunately, this needs a small table of 4 numbers: While the multiplier and divider can be the
+same for any century, the offset (phase shift) needs to be chosen according to the index of a century
+in the 4-century cycle.  The centennial and quadricentennial leap year rules get in the way here.
 
 So, with
  + \f$q_c, r_c\f$ as elapsed centuries and years in century
@@ -60,11 +60,13 @@ let us calulate:
     RDN     & \gets & 7 (5217 q_c + c_s + w_c) + 1 
 \f}
 
+Looking close, there's only _one_ division that cannot be expressed by arithmetic shift, and
+that's the initial division by 100. 
 
 \section iwcal_weeksplit Splitting Rata Die to Year and Week-in-Year
 
-Expressing this calculation in terms of the Gregorian is possible and instructional. It even makes for
-a decent rerefence implementation.  The point missing elegance is that it has to be a trial-and-search
+Expressing this calculation in terms of the Gregorian is possible and instructional.  It even makes for
+a decent reference implementation.  The point where it lacks elegance is that it has to be a trial-and-search
 algorithm, since the year starts of Gregorian and Week calendar are only roughly aligned.
 
 Inspection of the tabulated data for 4 centuries show another way to calculate the ISO8601 Week Date

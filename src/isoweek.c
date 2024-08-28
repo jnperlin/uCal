@@ -49,7 +49,7 @@ ucal_WeeksInYearsWD(
     ci = ci & 3u;
 
     // Get weeks in century. Can use plain division here as all ops are >= 0, and let the
-    // compiler sort out the possible optimisations.
+    // compiler sort out the possible optimizations.
     cw = (s100.r * 53431u + bctab[ci]) / 1024u;
 
     return s100.q * 5217 + cs + cw;

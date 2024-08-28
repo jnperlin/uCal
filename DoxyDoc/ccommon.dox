@@ -12,7 +12,7 @@
 // µCal -- a small calendar component in C99
 // Written anno 2024 by J.Perlinger (perlinger@nwtime.org)
 //
-// This file is part of the doxygen documentation.
+// This file is part of the Doxygen documentation.
 // ----------------------------------------------------------------------------------------------
 
 /*! \page ccalcommon Common Calendar Properties
@@ -47,12 +47,12 @@ the February with the leap-year depending length in the middle of the year is a 
 But after some analysis, it's not so bad after all.
 
   + We can use tabulated data for the accumulated month lengths and index with the month.
-  + We can use linear interpolations of the form \f$d \gets \left \lfloor \frac{a M + b}{c} \right \rfloor \f$
-    with some pre/post conditioning: We either assume a February has 30 days, or we shift the start
-    of year.
+  + We can use linear interpolations of the form \f$d \gets \left \lfloor \frac{a M + b}{c} \right
+    \rfloor \f$ with some pre/post conditioning: We either assume a February has 30 days, or we
+    shift the start of year.
 
 Shifting the year start moves February to the end of the year; now all months but the last have the
-same length for common and leap years. That means we don't need explicit knowledege about leap
+same length for common and leap years. That means we don't need explicit knowledge about leap
 years in the conversion, but in the end we have to compensate for the shift somehow. (It also Counts
 the size of data to tabulate to half!)
 
@@ -83,7 +83,7 @@ the number of _elpased days before the start of the month_:
 
  + The 1st expression is a simple table lookup.
  + The 2nd expression is a linear interpolation, the one with the smallest integer coefficients.
- + The 3rd expression is a linear interpolation with the smalles divider that is a power of two.
+ + The 3rd expression is a linear interpolation with the smallest divider that is a power of two.
 
 We use the 3rd form, as the division can be executed as a shift. (It's also possible to scale this
 up so the the result can be gained by a full byte or word extraction! That can be useful if the
@@ -128,15 +128,17 @@ This doesn't lend itself well to LaTeX formulas, so here comes a code block that
 \endcode
 
 It works by first dividing the days by 32, which yields an initial estimation that's never to high
-and never more off than by one. A simple correction step then moves it into the right slot, and that's it!
+and never more off than by one. A simple correction step then moves it into the right slot, and
+that's it!
 
 
 \subsubsection monthconv_m2d_mul Using linear interpolation
 
-This is not possible when trying to apply it directly: The vagrant February spoils it!  But that doesn't mean
-all is lost.  Once we assume a year has February with a fix length of 30 days, interpolation works! But of course
-some preconditioning is needed: Under the new scheme, the 1st of March is now always 61 days after the start of
-the modified year, while for a common year it is day 59 and for a leap year it is day 60.
+This is not possible when trying to apply it directly: The vagrant February spoils it!  But that
+doesn't mean all is lost.  Once we assume a year has February with a fix length of 30 days,
+interpolation works! But of course some preconditioning is needed: Under the new scheme, the 1st
+of March is now always 61 days after the start of the modified year, while for a common year it is
+day 59 and for a leap year it is day 60.
 
 This means we have to add 2 to any day number beyond 59 for common years and 1 to any day number
 beyond 60 for leap years.  But then we can again do the mul/shift operations:
@@ -146,8 +148,13 @@ beyond 60 for leap years.  But then we can again do the mul/shift operations:
     d_m & \gets & dy - \left \lfloor \frac{489 m + 8}{16} \right \rfloor
 \f}
 
-If multiplications and shifts are fast, this can easily outperform the table lookup, fast as it already is.
 
+\subsubsection monthconv_perf Performance Considerations
+
+If multiplications and shifts are fast, the linear interpolations can outperform the table
+lookups, fast as they already are. But random memory access can be a bottleneck due to cache
+misses, while reading and decoding linear code is easier to handle for most CPUs.
+If performance is a real issue, benchmark and profile the different options!
 
 */
 // -*- that's all folks -*-

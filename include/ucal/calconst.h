@@ -12,7 +12,7 @@
 // µCal -- a small calendar component in C99
 // Written anno 2024 by J.Perlinger (perlinger@nwtime.org)
 //
-// This module contains claendar constants.
+// This module contains calendar constants.
 // ----------------------------------------------------------------------------------------------
 #ifndef CALCONST_H_D2078C60_0B6B_439F_B110_087913F54042
 #define CALCONST_H_D2078C60_0B6B_439F_B110_087913F54042
@@ -22,8 +22,8 @@
 #define UCAL_rdnUNIX 719163
 #define UCAL_rdnGPS  722820
 
-// The week cycle and the Gregorian calendar cycle are aligned: The 1st day of a qudricentennial
-// is always a monday.  Other cycles need more effort...
+// The week cycle and the Gregorian calendar cycle are aligned: The 1st day of a quadricentennial
+// is always a Monday.  Other cycles need more effort...
 //
 // A GPS era is 1024 weeks, with an epoch of 1980-01-06.  This produces a cycle shift ('phi', for
 // 'phase') that has to be applied when mapping GPS stamps to the RDN scale.

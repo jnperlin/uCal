@@ -35,7 +35,7 @@ extern int32_t ucal_YearStartWD(int16_t y);
 
 /// @brief convert elapsed weeks in the Christian epoch to years and weeks
 /// @param weeks    number of weeks to split
-/// @return         tupe with years in @c .q and weeks in @c .r
+/// @return         tuple with years in @c .q and weeks in @c .r
 extern ucal_iu32DivT ucal_SplitEraWeeksWD(int32_t weeks);
 
 /// @brief Merge to components of an ISO8601 week date to a RataDie Number

@@ -29,13 +29,13 @@ typedef struct {
 
 // Functions dealing raw GPS time stamps
 
-/// @brief conver a @c time_t value to a rew GPS time
+/// @brief convert a @c time_t value to a raw GPS time
 /// @param tt       system time as ordinary @c time_t value
 /// @param ls       leap second correction to apply
 /// @return         time stamp as raw GPS time
 extern ucal_GpsRawTimeT ucal_GpsMapTime(time_t tt, int16_t ls);
 
-/// @brief map a raw GPS time stamp intp the RataDie time scale
+/// @brief map a raw GPS time stamp into the RataDie time scale
 /// @param w        GPS week, [0..1023]
 /// @param t        GPS time in week, [0..604799]
 /// @param ls       GPS leap second difference to UTC
@@ -50,7 +50,7 @@ extern ucal_iu32DivT ucal_GpsMapRaw1(uint16_t w, uint32_t t, int16_t ls, int32_t
 /// @param w        GPS week, [0..1023]
 /// @param t        GPS time in week, [0..604799]
 /// @param ls       GPS leap second difference to UTC
-/// @param base     ptr to base time (can be NULL)
+/// @param base     pointer to base time (can be NULL)
 /// @return
 extern time_t ucal_GpsMapRaw2(uint16_t w, uint32_t t, int16_t ls, const time_t *base);
 

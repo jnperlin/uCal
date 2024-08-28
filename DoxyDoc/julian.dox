@@ -12,33 +12,33 @@
 // µCal -- a small calendar component in C99
 // Written anno 2024 by J.Perlinger (perlinger@nwtime.org)
 //
-// This file is part of the doxygen documentation.
+// This file is part of the Doxygen documentation.
 // ----------------------------------------------------------------------------------------------
 
 /*! \page julcal Julian Civil Calendar
 
 The leap year rule is simple: Every 4th year is a leap year.  That's it. So the calendar
-consists of cycles 1461 days each, with an avarage year length of 365.25 days.
+consists of cycles 1461 days each, with an average year length of 365.25 days.
 
 Unfortunately, 0001-01-01(Julian) is not the same day as 0001-01-1(Gregorian); the Gregorian
 calendar reform made an astronomical correction to fix the extra leap days since 324CE,
 not an algorithmic correction to fix the extra leap days since the Christian calendar epoch.
 There are two extra days.
 
-The definition of the transistion between Julian and Gregorian calendar is as follows:
+The definition of the transition between Julian and Gregorian calendar is as follows:
     + Thursday, 1582-10-04(Julian) is the last day of the Julian calendar.
     + Friday, 1582-10-15(Gregorian) is the first day of the Gregorian calendar.
 
-Of course, both calenders can be extended in both directions, beyond end or before start,
+Of course, both calendars can be extended in both directions, beyond end or before start,
 and so the following equalities must hold:
     + 1582-10-4(Julian) must be the same day as 1582-10-14(Gregorian)
     + 1582-10-5(Julian) must be the same day as 1582-10-15(Gregorian)
 
 \section jlcal_yearstart Start of a Year to Rata Die
 
-For a given calendar year \f$Y\f$, we first calculate the number of elapsed years since epoch
-by reducing 1 (since 0001-01-01 is the epoch) and then do a simple divisions to obtain the
-number of leap days. Now the RDN of the 1st day of the year is easy:
+For a given calendar year \f$Y\f$, we first calculate the number of elapsed years since epoch by
+reducing 1 (since 0001-01-01 is the epoch) and then do a simple divisions to obtain the number of
+leap days. Now the RDN of the 1st day of the year is easy:
 
 \f{eqnarray*}{
     y   & \gets & Y - 1 \\
@@ -55,7 +55,7 @@ of 3 common years with 365 days and one leap year with 366 days.
 
 We have the following quantities:
  + \f$c_y, r_y\f$ are year cycle and year remainder
- + \f$d_0, d_y\f$ are elapsed days since epoch and start of year year, repectively
+ + \f$d_0, d_y\f$ are elapsed days since epoch and start of year year, respectively
  + \f$Y, D\f$ are calendar year and day-of-year (starting with 1)
  + \f$LEAP\f$ is the leap year indication
 

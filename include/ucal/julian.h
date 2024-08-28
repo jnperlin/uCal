@@ -38,7 +38,7 @@ extern int32_t ucal_LeapDaysInYearsJD(int32_t ey);
 /// Basic workhorse to split a number of days to days and years, according to the Julian Calendar
 /// rules.
 /// @param rdn  RDN to split
-/// @param pLY  optional pointer to stoerage of leap year indicator
+/// @param pLY  optional pointer to storage of leap year indicator
 /// @return     tuple with years as quotient and days as remainder
 extern ucal_iu32DivT ucal_DaysToYearsJD(int32_t rdn, bool* pLY);
 
@@ -54,7 +54,7 @@ extern bool ucal_RdnToDateJD(ucal_CivilDateT* into, int32_t rdn);
 /// out-of-range values gracefully. Months will be normalized first, and if only a year and
 /// day-of-year are available, act as if it is just an extended January!
 /// @param y    calendar year
-/// @param m    calender month (can be off-scale)
+/// @param m    calendar month (can be off-scale)
 /// @param d    day-of-month (can be off-scale)
 /// @return     RataDie number of the date
 extern int32_t ucal_DateToRdnJD(int16_t y, int16_t m, int16_t d);

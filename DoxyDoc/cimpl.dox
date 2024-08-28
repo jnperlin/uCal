@@ -12,7 +12,7 @@
 // µCal -- a small calendar component in C99
 // Written anno 2024 by J.Perlinger (perlinger@nwtime.org)
 //
-// This file is part of the doxygen documentation.
+// This file is part of the Doxygen documentation.
 // ----------------------------------------------------------------------------------------------
 
 /*! \page implementation Implementation Details
@@ -23,7 +23,7 @@ We have to execute a great number of division operations when doing calendar mat
 While the dividers are are always positive constants (some kind of period / duration),
 the dividend is often a signed quantity.
 
-Many C compilers can code division by a constant quite effective, but the divison rules
+Many C compilers can code division by a constant quite effective, but the division rules
 for C are always rounding towards zero.  Which is not exactly what we need -- calendar
 calculations need floor division, rounding towards negative infinity.  (Which _is_ the same
 for positive numbers, of course.)
@@ -47,7 +47,7 @@ Since \f$ |q| < |n| \; \forall \: |d| > 1 \f$, the quotient will also fit into t
 
 This scheme obviously expands to _all_ integral types -- one just has to find an unsigned integral
 type that is at least as wide as the dividend!  Which can be a bit of a pain when the exact type
-is not known and there's no standardized definition of an unsigned counterpart.  Yes, we'reading
+is not known and there's no standardized definition of an unsigned counterpart.  Yes, we're
 talking about @c time_t here.
 
 
@@ -148,7 +148,8 @@ ways: Using the functions from this module and using the \c gmtime() / \c timegm
 
 This rough measurement shows a speed gain factor of ~3.5 over the "C" runtime on an older XEON CPU
 when compiled as 64bit binary with CLANG-18 and \c -o2.  On an Raspi3 (32bit mode, CLANG-18, \c -o2)
-the speed gain is a factor of even ~6.0!  (It seems that optimising the extended divisions pays off well.)
+the speed gain is a factor of even ~6.0!  (For 64-bit \c time_t on both platforms, of course.
+It seems that optimising the extended divisions pays off well.)
 
 */
 // -*- that's all folks -*-

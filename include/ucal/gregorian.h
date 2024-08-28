@@ -33,12 +33,12 @@ static inline bool ucal_IsLeapYearGD(int32_t y) {
 /// @brief calculate number of leap days in years
 ///
 /// For a number of years elapsed since epoch, establish the number of leap years (which is also
-/// the number of leap days) that happened in that period.  There are several ways to calclate
+/// the number of leap days) that happened in that period.  There are several ways to calculate
 /// this; this implementation should be reasonably fast.
 ///
 /// While it is quite obvious for years _after_ the epoch, the meaning and handling of negative
 /// numbers needs clarification. Conceptually the algorithm finds the last Gregorian Calendar
-/// cycle start on or before the given year and works up from there. So, for -1 you will find thet
+/// cycle start on or before the given year and works up from there. So, for -1 you will find that
 /// there is -1 leap days, as the last year before epoch must be the last year of a (proleptic)
 /// cycle and hence is a leap year.
 /// @param ey   number of full elapsed years since epoch (negative for proleptic years!)
@@ -50,7 +50,7 @@ extern int32_t ucal_LeapDaysInYearsGD(int32_t ey);
 /// Basic workhorse to split a number of days to days and years, according to the Gregorian
 /// Calendar rules.
 /// @param rdn  RDN to split
-/// @param pLY  optional pointer to stoerage of leap year indicator
+/// @param pLY  optional pointer to storage of leap year indicator
 /// @return     tuple with years as quotient and days as remainder
 extern ucal_iu32DivT ucal_DaysToYearsGD(int32_t rdn, bool* pLY);
 

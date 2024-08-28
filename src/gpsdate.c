@@ -69,7 +69,7 @@ ucal_GpsMapRaw1(
     // on the fly:
     ucal_iu32DivT dt = ucal_iu32SubDiv(t, ls, 86400u);
 
-    // Now accummulate the days, including the day phase shift between the GPS and RDN scales:
+    // Now accumulate the days, including the day phase shift between the GPS and RDN scales:
     int32_t days = ((int32_t)(w & 1023) * 7) + dt.q + UCAL_phiGPS;
 
     // check base day: don't go before epoch ;)

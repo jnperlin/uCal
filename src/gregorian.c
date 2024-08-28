@@ -29,8 +29,8 @@ ucal_LeapDaysInYearsGD(
     int32_t ey)
 {
     // This is essentially the well-known in-out-in calculation for the sum of leap years.  It's
-    // slightly compounded by the fact that the calulation is done on the one's(!!)  complement
-    // for hegative numbers.  Luckily the in-out-in is so well-balanced that we have to do the bit
+    // slightly compounded by the fact that the calculation is done on the one's(!!)  complement
+    // for negative numbers.  Luckily the in-out-in is so well-balanced that we have to do the bit
     // flips only before and after the cascade!
     uint32_t uy, ud, m;
     m   = -(ey < 0);
@@ -50,7 +50,7 @@ ucal_DaysToYearsGD(
     uint32_t sday, qy;
     int32_t qc;
     // We start with splitting the RDN into elapsed centuries, using scaled days.  We want to
-    // evalute ((rdn - 1) * 4 + 3) / 146097, which is a fractional fixpoint division.
+    // evaluate ((rdn - 1) * 4 + 3) / 146097, which is a fractional fix-point division.
     // First, we observe that (rdn - 1) * 4 + 3 == rdn * 4 - 1, and this term will be negative
     // if and only if rdn <= 0.
     if (sizeof(size_t) > sizeof(int32_t)) {
@@ -198,7 +198,7 @@ ucal_RellezGD(
 
     // Check the day-of-month, assuming every 4th year of a century is a leap year. This needs
     // some special care: The last day of a (shifted) great calendar cycle (that is, Feb-29 of a
-    // quad-centennial year) *must* be a Tuesday, and all other possibilities are ruled out. Since
+    // quadricentennial year) *must* be a Tuesday, and all other possibilities are ruled out. Since
     // the congruent inversion algorithm cannot detect this below, a special rule is needed
     // here. It is important that for *valid* input the calculation below produces the proper
     // result, but it fails to reject invalid input for this special case.
