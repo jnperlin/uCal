@@ -17,7 +17,7 @@
 #ifndef CALCONST_H_D2078C60_0B6B_439F_B110_087913F54042
 #define CALCONST_H_D2078C60_0B6B_439F_B110_087913F54042
 
-// Some important calendar fixpoints
+// Some important calendar fix-points
 #define UCAL_rdnNTP  693596
 #define UCAL_rdnUNIX 719163
 #define UCAL_rdnGPS  722820
