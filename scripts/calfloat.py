@@ -109,14 +109,14 @@ def enum_transposed(seq: Iterable[int]) -> Iterable[Tuple[int,int]]:
 # slope calculations for the min/max slope, either against between two point pairs or a point
 # pair and zero (the origin)
 
-def min_slope_p(t) -> float:
+def min_slope_p(t: Tuple[Tuple[int, int],Tuple[int, int]]) -> float:
     "lower slope of pair of points"
     t1,t2 = t
     dx = t2[0] - t1[0]
     dy = t2[1] - t1[1] - 1
     return dy / dx
 
-def max_slope_p(t: Tuple[int, int]) -> float:
+def max_slope_p(t: Tuple[Tuple[int, int],Tuple[int, int]]) -> float:
     "upper slope of pair of points"
     t1,t2 = t
     dx = t2[0] - t1[0]
@@ -141,7 +141,7 @@ def max_slope_0(t2: Tuple[int, int]) -> float:
 # intercept anyways, we can do all the calculations in integer quantities and forget all about
 # rounding errors!
 
-def intercept_y(pt, slope):
+def intercept_y(pt: Tuple[int, int], slope: Tuple[int, int]) -> int:
     "calculate lower intercept"
     dx, dy = pt
     sy, sx = slope
