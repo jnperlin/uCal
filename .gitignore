@@ -8,6 +8,8 @@ build/
 barm/
 DoxyOut/
 .vscode/
+**/__pycache__
+**/__attic__
 
 # Object files
 *.o
