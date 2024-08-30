@@ -31,19 +31,26 @@ There are three nice properties of this calendar:
  + Since it is week-aligned, we can use weeks instead of days as basic calendar units, reducing
    the numeric range we have to deal with.
 
+We further observe that a full 400-year cycle takes 20871 weeks, with century lengths of
+5218, 5217, 5218 and 5218 weeks.  (There _has_ to be a glitch somewhere, right?)
+
 
 \section iwcal_yearstart Start of a Year to Rata Die
 
-In this direction we directly use the Gregorian calendar, as we have functions to calculate the start
-of a year as RDN and functions to find any given day-of-week closest to this day.  Calculating the
-Monday closest to the start of a Gregorian Calendar year is easy.
+In this direction we can directly use the Gregorian calendar, as we have functions to calculate
+the start of a year as RDN and functions to find any given day-of-week closest to this day.
+Calculating the Monday closest to the start of a Gregorian Calendar year is easy.
 
 There's another way that is more arcane, but has its counterpart in the split of weeks.  It is based
 on the inspection of the tabulated data for 400 years, and similar to the tabulated data for the
 conversion from months to a days and reverse, there's a way that does linear interpolation.
 
-Unfortunately, this needs a small table of 4 numbers: While the multiplier and divider can be the
-same for any century, the offset (phase shift) needs to be chosen according to the index of a century
+First we split the years into centuries and years in centuries. Converting centuries to weeks is
+simple: Multiply with 5218, and remove 1 in 4 centuries for the defective 2nd cycle.
+
+Now we have to treat the years in a century by a linear interpolation. Unfortunately, this needs
+a small table of 4 numbers: While the multiplier and divider (the slope) can be the same for
+all centuries, the offset (phase shift) needs to be chosen according to the index of a century
 in the 4-century cycle.  The centennial and quadricentennial leap year rules get in the way here.
 
 So, with
@@ -55,9 +62,10 @@ let us calulate:
 
 \f{eqnarray*}{
     q_c,r_c & \gets & \left \lfloor \frac{Y-1}{100} \right \rfloor \\
-    c_s,c_i & \gets & \left \lfloor \frac{3 q_c + 1}{4} \right \rfloor \\
-    w_c     & \gets & \left \lfloor \frac{5431 r_c + (157, 449, 597, 889)[c_i]}{1024} \right \rfloor \\
-    RDN     & \gets & 7 (5217 q_c + c_s + w_c) + 1 
+    c_s     & \gets & \left \lfloor \frac{q_c + 2}{4} \right \rfloor \\
+    c_i     & \gets & q_c \bmod{4} \\
+    w_c     & \gets & \left \lfloor \frac{5431 r_c + (448,160,896,608)[c_i]}{1024} \right \rfloor \\
+    RDN     & \gets & 7 (5218 q_c - c_s + w_c) + 1 
 \f}
 
 Looking close, there's only _one_ division that cannot be expressed by arithmetic shift, and
@@ -65,15 +73,16 @@ that's the initial division by 100.
 
 \section iwcal_weeksplit Splitting Rata Die to Year and Week-in-Year
 
-Expressing this calculation in terms of the Gregorian is possible and instructional.  It even makes for
-a decent reference implementation.  The point where it lacks elegance is that it has to be a trial-and-search
-algorithm, since the year starts of Gregorian and Week calendar are only roughly aligned.
+Expressing this calculation in terms of the Gregorian is possible and instructional.  It even
+makes for a decent reference implementation.  The point where it lacks elegance is that it has to
+be a trial-and-search algorithm, since the year starts of Gregorian and Week calendar are only
+roughly aligned.
 
-Inspection of the tabulated data for 4 centuries show another way to calculate the ISO8601 Week Date
-from a linear day count.
+Inspection of the tabulated data for 4 centuries show another way to calculate the ISO8601 Week
+Date from a linear day count.
 
-Since the Week Calendar is, well, week-aligned, we can do a floor division by 7 to get the
-number of weeks elapsed since epoch first. Then the remaining calculations are all centered on weeks.
+Since the Week Calendar is, well, week-aligned, we can do a floor division by 7 to get the number
+of weeks elapsed since epoch first. Then the remaining calculations are all centered on weeks.
 
 So, with
  + \f$w, d_w\f$ as weeks since epoch and days since start-of-week
@@ -86,7 +95,7 @@ let us calulate:
     w,d_w   & \gets & \left \lfloor \frac{RDN-1}{7} \right \rfloor \\
     q_c,r_c & \gets & \left \lfloor \frac{4 w + 2}{20871} \right \rfloor \\
     q_y,w'  & \gets & \left \lfloor \frac{
-                  157 \left\lfloor\frac{r_c}{4}\right\rfloor + (85,130,17,62)[q_c \bmod 4]
+                  157 \left\lfloor\frac{r_c}{4}\right\rfloor + (84,128,16,62)[q_c \bmod{4}]
                 }{8192} \right \rfloor \\
     D & \gets & d_w + 1 \\
     W & \gets & \left\lfloor\frac{w'}{157}\right\rfloor + 1 \\

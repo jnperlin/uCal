@@ -21,7 +21,6 @@
 #include <errno.h>
 
 #include "ucal/common.h"
-#include "ucal/julian.h"
 #include "ucal/isoweek.h"
 
 // ----------------------------------------------------------------------------------------------
@@ -32,27 +31,18 @@ ucal_WeeksInYearsWD(
     int32_t years)
 {
     // use: w = (y * 53431 + b[c]) / 1024 as interpolation
-    static const uint16_t bctab[4] = { 157, 449, 597, 889 };
 
-    int32_t  cs, cw, ci;
+    static const uint16_t bctab[4] = { 448, 160, 896, 608 };
 
     // split years into centuries first
     ucal_iu32DivT s100 = ucal_iu32Div(years, 100u);
-    // calculate century cycles shift and cycle index:    
-    // Assuming a century is 5217 weeks, we have to add a cycle shift that is 3 for every 4
-    // centuries, because 3 of the four centuries have 5218 weeks. So '(cc*3 + 1) / 4' is the
-    // actual correction, and the second century is the defective one.
-    //
-    // Needs floor division by 4, which is done with masking and shifting.
-    ci = s100.q * 3 + 1;
-    cs = ucal_i32Asr(ci, 2);
-    ci = ci & 3u;
 
-    // Get weeks in century. Can use plain division here as all ops are >= 0, and let the
-    // compiler sort out the possible optimizations.
-    cw = (s100.r * 53431u + bctab[ci]) / 1024u;
+    // Assuming a century is 5218 weeks, we have to remove one week in 400 years for the
+    // defective 2nd century. Can be easily calculated as "(century + 2) // 4".
 
-    return s100.q * 5217 + cs + cw;
+    return (s100.q * 5218)
+         - ucal_i32Asr((s100.q + 2), 2)
+         + ((s100.r * 53431u + bctab[s100.q & 3u]) >> 10);
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -72,7 +62,7 @@ ucal_SplitEraWeeksWD(
     int32_t weeks)
 {
     // use: y = (w * 157 + b[c]) / 8192 as interpolation
-    static const uint8_t bctab[4] = { 85, 130, 17, 62 };
+    static const uint8_t bctab[4] = { 84, 128, 16, 62 };
 
     int32_t cc, ci;
     uint32_t sw, cy, Q;
@@ -100,16 +90,16 @@ ucal_SplitEraWeeksWD(
         sw = ((qr.r >> 17) ^ m) + (UINT32_C(20871) & m);
     }
 
-  ci = Q & 3u;
-  cc = ucal_u32_i32(Q);
+    ci = Q & 3u;
+    cc = ucal_u32_i32(Q);
 
-  // Split off years; sw >= 0 here! The scaled weeks in the years are scaled up by 157 afterwards.
-  sw = (sw / 4u) * 157u + bctab[ci];
-  cy = sw / 8192u; /* sw >> 13 , let the compiler sort it out */
-  sw = sw % 8192u; /* sw & 8191, let the compiler sort it out */
+    // Split off years; sw >= 0 here! The scaled weeks in the years are scaled up by 157 afterwards.
+    sw = (sw >> 2) * 157u + bctab[ci];
+    cy = sw >> 13;      // sw / 8192
+    sw = sw & 8191;     // sw % 8192
 
-  // assemble elapsed years and downscale the elapsed weeks in the year.
-  return (ucal_iu32DivT) { .q = 100 * cc + cy, .r = sw / 157u };
+    // assemble elapsed years and downscale the elapsed weeks in the year.
+    return (ucal_iu32DivT){ .q = (100 * cc + cy), .r = (sw / 157u) };
 }
 
 // ----------------------------------------------------------------------------------------------
