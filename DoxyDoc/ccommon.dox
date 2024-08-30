@@ -17,16 +17,16 @@
 
 /*! \page ccalcommon Common Calendar Properties
 
-A year is divided into 12 months of uneven length, with a total sum of 365 days for
-common years and 366 days in leap years.  These days the year starts with January, but
-the Romans initially started the year with Martius (March). That's why the December ('Decembris')
-is the tenth month, originally. That's also why February has the leap day: the leap
-day was added at the _end_ of the year! (And some calculations become indeed easier
-when shifting the start of the year for calculatory reasons!)
+A year is divided into 12 months of uneven length, with a total sum of 365 days for common years
+and 366 days in leap years.  These days the year starts with January ('Ianuarius'), but the
+Romans initially started the year with March ('Martius'). That's why the December ('December') is
+the tenth month, originally. (eng. 'ten' is lat. 'decem'!) That's also why February ('Februarius')
+has the leap day: the leap day was added at the _end_ of the year! (And some calculations become
+indeed easier when shifting the start of the year back to March for calculatory reasons!)
 
-This whole stuff is hard to handle for computers (and astronomers, too!), so it's  easier
-to count a single scalar quantity.  Seconds, days or weeks are handy, as they still have
-a conceptional relationship to our time / calendar scales, and days are most useful.
+This whole stuff is hard to handle for computers (and astronomers, too!), so it's  easier to count
+a single scalar quantity.  Seconds, days or weeks are handy, as they still have a conceptional
+relationship to our time / calendar scales, and days are most useful.
 
 \section daycount Counting days
 
@@ -51,15 +51,16 @@ But after some analysis, it's not so bad after all.
     \rfloor \f$ with some pre/post conditioning: We either assume a February has 30 days, or we
     shift the start of year.
 
-Shifting the year start moves February to the end of the year; now all months but the last have the
-same length for common and leap years. That means we don't need explicit knowledge about leap
-years in the conversion, but in the end we have to compensate for the shift somehow. (It also Counts
-the size of data to tabulate to half!)
+Shifting the year start to March moves February to the end of the year; now all months but the
+last have the same length for common and leap years. That means we don't need explicit knowledge
+about leap years in the conversion, but in the end we have to compensate for the shift somehow.
+(It also cuts the size of tabulated data to half!)
 
-Finding coefficients for the linear interpolation just number-crunching, and there's an infinite
-set of coefficient combinations to draw from.  Of special interest is the one with the smallest
-divider and the one where the divider is the smallest possible power of two.  Here we prefer the
-second variant, as we can evaluate the division as shift operation.
+Finding coefficients for the linear interpolation is just number-crunching, and there's an
+infinite set of coefficient combinations to draw from.  Of special interest is the one with the
+smallest divider and the one where the divider is the smallest possible power of two.  Here we
+prefer the second variant, as we can evaluate the division as shift operation.
+
 
 \subsection monthconv_m2d Months to Days-in-Year
 
@@ -94,10 +95,13 @@ And, well, yes, that's it!
 
 \subsection monthconv_d2m Days-in-Year to Months
 
-When converting in this direction, the _unshifted_ calendar is a bit more convenient.  While
-conversions now _need_ to know if the conversion is for a leap year or a common year, this
+When converting in this direction, the rugular (_unshifted_) calendar is a bit more convenient.
+While conversions now _need_ to know if the conversion is for a leap year or a common year, this
 information can be easily obtained as a byproduct when splitting a linear day count into years and
-day-in-year, so no extra expensve calculations are needed.
+day-in-year, so no extra expensve calculations are needed.  (If you do _not_ require a leap year
+flag, nor the day-of-year, the shifted calendar _is_ a bit easier to handle.  With these two
+quantities included, it's much messier than the single adjustment needed for the regular
+calendar!)
 
 But now the vagrant February is in the middle of the year, and that makes it slightly awkward.
 We still have two major options how to proceed.
@@ -134,11 +138,11 @@ that's it!
 
 \subsubsection monthconv_m2d_mul Using linear interpolation
 
-This is not possible when trying to apply it directly: The vagrant February spoils it!  But that
-doesn't mean all is lost.  Once we assume a year has February with a fix length of 30 days,
-interpolation works! But of course some preconditioning is needed: Under the new scheme, the 1st
-of March is now always 61 days after the start of the modified year, while for a common year it is
-day 59 and for a leap year it is day 60.
+This is not possible when trying to apply it directly: The too-short February spoils it.
+But that doesn't mean all is lost.  Once we assume February has a fixed length of 30 days,
+interpolation works!  But of course some preconditioning is needed now: Under the new scheme,
+March,1st is now always day 61 of the modified year, while for a common year March,1st is day 59
+and for a leap year March,1st is day 60.
 
 This means we have to add 2 to any day number beyond 59 for common years and 1 to any day number
 beyond 60 for leap years.  But then we can again do the mul/shift operations:

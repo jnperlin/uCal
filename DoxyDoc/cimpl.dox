@@ -67,7 +67,25 @@ used in a call to the core division function.
 
 It doesn't make the nicest for reading in the source code, but calendar calculations are littered
 with magic constants anyway.  We can live with a few more obscure numbers if we can avoid
-slow runtime functions with them.
+slow runtime functions with them. And the constants are constant in the sense of \f$\pi\f$
+being constant.
+
+(In "C++" it is possible to use template meta-programming to let the compiler calculate the
+necessary parameters, but with plain "C" you need to do it yourself...)
+
+Assuming we do the calculations in an _unsigned_ integral type with \f$N\f$ bits, and we want
+to divide by a divider \f$d\f$, \f$ 0 \leq d < 2^N\f$.
+
+ + find a shift value \f$s\f$ such that \f$ 2^{N-1} \leq 2^s d < 2^N\f$
+ + let \f$ 2^s d \f$ be the _normalized divider_
+ + let \f$ \lfloor \frac{2^{2N} - 1}{2^s d} \rfloor - 2^N\f$ be the _approximated inverse_
+ + Extend the dividend into 2 cells, applying the shift \f$s\f$ in a left shift.
+
+Now we can apply the extended division step.  If the remainder is needed, it has to be
+scaled down again, by shifting \f$s\f$ positions to the right.
+
+And of course the one's complement division trick for signed floor divison works with the
+extended division, too.
 
 
 \section intcast Integer Conversions
@@ -87,7 +105,7 @@ And implementation-defined means that the compiler can do as he likes, and even 
 It just has to document it and stick to the rule it made.
 
 Basically, this means that for a conversion from `unsigned int` to `signed int` the result is
-compiler-defined for all values greater than `INT_MAX`.  While most compiler define this as a simple
+compiler-defined for all values greater than `INT_MAX`.  While most compilers define this as a simple
 pattern-preserving copy operation, it just doesn't have be this way. And there's no really universally
 portable way out of this, as the permitted representation of negative integral values can be one
 of three choices: two's complement, one's complement, and sign/magnitude. And for the last two, there's
