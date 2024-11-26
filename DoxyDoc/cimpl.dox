@@ -20,7 +20,7 @@
 \section floordiv Floor Division
 
 We have to execute a great number of division operations when doing calendar math.
-While the dividers are are always positive constants (some kind of period / duration),
+While the dividers are always positive constants (some kind of period / duration),
 the dividend is often a signed quantity.
 
 Many C compilers can code division by a constant quite effective, but the division rules
@@ -84,8 +84,27 @@ to divide by a divider \f$d\f$, \f$ 0 \leq d < 2^N\f$.
 Now we can apply the extended division step.  If the remainder is needed, it has to be
 scaled down again, by shifting \f$s\f$ positions to the right.
 
-And of course the one's complement division trick for signed floor divison works with the
+And of course the one's complement division trick for signed floor division works with the
 extended division, too.
+
+
+\section int_mod7 Integer MOD 7 operations
+
+Operations modulo 7 are needed in several places when doing calendar calculations, but of course
+it must be by floor convention and expressions like \f$(a + b) \bmod 7\f$ and \f$(a - b) \bmod 7\f$
+should not run into overflow issues.
+
+Both points can be solved with some preconditioning. 7 is a Mersenne number of the \f$2^N-1\f$
+series, so a partial reduction by digit sums can be done without multiplication, that is,
+using only (signed) shifts and adding.
+(Hint: \f$ 2^{3n} \equiv 1 \pmod{7} \; \forall \, n \in \mathbb{N} \f$)
+
+This can be used repeatedly if needed to make the operand for the final MOD 7 operation strictly
+non-negative, and this MOD operation can be left to C's @c % operator now.  It is possible
+to use a complete digit sum reduction, but there's no real benefit in that.  OTOH, the partial
+reduction is simple step to avoid overflows and branches for sign handling. The constants involved
+can be chosen to fit into 16 bit, making them suitable for e.g. ARM platforms without negative
+impact on others. 
 
 
 \section intcast Integer Conversions
@@ -100,7 +119,7 @@ to taking the input value modulo \f$2^N\f$ -- but it has to be the mathematical 
 modulo operator of the C language!
 
 The reverse operation is not so easy. The standard says for a conversion from unsigned to signed: "If the
-source value is not representable in the destination type, the result is implementation-defined."
+source value is not presentable in the destination type, the result is implementation-defined."
 And implementation-defined means that the compiler can do as he likes, and even raise a trap (signal).
 It just has to document it and stick to the rule it made.
 
@@ -121,7 +140,7 @@ ourselves to two's complement architectures, the issue _can_ be solved. Consider
 \endcode
 
 If `u` fits into the positive range of `int`, the 2nd branch of the ternary operation simply casts the value.
-No issues here, as the surce value is representable in the target type.
+No issues here, as the source value is presentable in the target type.
 
 The other branch is more interesting: It first inverts the bit pattern, which toggles the sign bit. This
 (now non-negative) value clearly fits into an integer, so the cast to `int` leaves no room for interpretations.
@@ -140,27 +159,37 @@ at least when optimising!
 
 \section intasr Arithmetic Shift right
 
-The "C" standard leaves it to the compiler whether right shift of integers is logic or arithmetic. While
-it is possible to fully emulate arithmetic right shift, it's a real pain.  In some sense, it's a bit like
-integer casting: It becomes feasible once we restrict the code to work on two's complement machines.
+The "C" standard leaves it to the compiler whether right shift of integers is logic or arithmetic.
+Arithmetic shift right yields a result according to
+\f[ ASR(x,n) \; \equiv \; \left\lfloor\frac{x}{2^n}\right\rfloor \f], filling in sign bits from the
+right, while logic shift would fill in zero bits.
 
-Efectively, we can use the preprocessor to find out: The preprocessor must evaluate numeric expressions
-following _exactly_ the same rules the compiler applies to the evaluation of constant expressions, and
-_this_ evaluation must yield the same results as the target would yield when doing the calculations
-at runtime!
+Effectively, we can use the preprocessor to find out what the compiler would do: The preprocessor
+must evaluate numeric expressions following _exactly_ the same rules the compiler applies to the
+evaluation of constant expressions, and _this_ evaluation must yield the same results as the
+target would yield when doing the calculations at runtime!
 
 So a simple check with the preprocessor is sufficient: Only on machines with arithmetic
-right shift ` -1 == (-1 >> 1) ` can be true. (It doesn't matter if the silicone does it itself or if the
-compiler emits code to emulate this -- from high level the right shift _is_ aritmetic!)
+right shift ` -1 == (-1 >> 1) ` can be true. (It doesn't matter if the silicone does it itself
+or if the compiler emits code to emulate this -- from high level the right shift _is_ arithmetic!)
 
-If the shift is logic, we can use a mask/shift/mask sequence that emulates arithmetic shift
-_on two's complement targets_.  Not that we expect to see anything else these days.
+If the shift is logic, we can use a mask/shift/mask sequence that emulates arithmetic shift on _any_
+target, converting the input to an unsigned entity first.  Since the right shift cannot increase
+the absolute value of the shift result, the result will always be presentable in the input type,
+even if the shift width is zero.  Of course, this is very similar to the general handling of the
+signed floor division.
+
+(It should be noted that at least newer versions of GCC and CLANG recognize the mask/shift/mask sequence
+and substitute a a single SAR{l,q} instruction on x86/x64 platforms.  But then, at least GNU promises
+to do arithmetic shifts on _all_ platforms it supports, and other compilers may not be as smart
+when doing the optimization.  IMHO it's better to reserve the emulation sequence for environments
+where it is really needed.)
 
 
 \section calcperf Runtime Performance
 
-There's little performance test tool included (test-perf) that does a ~400000 roundtrip calculations
-from a \c time_t value to civil date back to \c time_t seconds.  The roundtrip is implemented in two
+There's little performance test tool included (test-perf) that does a ~400000 round trip calculations
+from a \c time_t value to civil date back to \c time_t seconds.  The round trip is implemented in two
 ways: Using the functions from this module and using the \c gmtime() / \c timegm() pair from the
 (GLIBC) "C" runtime.
 

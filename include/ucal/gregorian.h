@@ -86,7 +86,7 @@ extern int32_t ucal_YearStartGD(int16_t y);
 /// name.  (Zeller's congruence is a method to calculate the day-of-week for a date -- we use it
 /// to do the reverse: find which date actually has the given day-of-week!)
 ///
-/// For the gregorian calendar, every valid date with a two-digit year can only have four
+/// For the Gregorian calendar, every valid date with a two-digit year can only have four
 /// different weekdays, as the whole calendar has a period of 400 years.  (The only exception is
 /// Feb.29, 00. This is the leap day of a quadricentennial year and _must_ be a Tuesday...)
 ///

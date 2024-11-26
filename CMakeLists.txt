@@ -116,4 +116,5 @@ target_link_libraries(test-isow ucal unity)
 add_test(NAME ucal-test COMMAND test-calc)
 add_test(NAME ucal-perf COMMAND test-perf)
 
+add_executable(testdiv scripts/__attic__/nrdiv.c)
 # -*- that's all folks -*-

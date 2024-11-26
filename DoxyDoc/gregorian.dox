@@ -74,7 +74,7 @@ truncated divisions.)
 We have the following quantities:
  + \f$c_c, r_c\f$ are century cycle and century remainder
  + \f$c_y, r_y\f$ are year cycle and year remainder
- + \f$d_0, d_c, d_y\f$ are elapsed days since epoch / century / year, repectively
+ + \f$d_0, d_c, d_y\f$ are elapsed days since epoch / century / year, respectively
  + \f$Y, D\f$ are calendar year and day-of-year (starting with 1)
  + \f$LEAP\f$ is the leap year indication
 
@@ -93,7 +93,7 @@ Some notes on the expressions above:
  + The first division might have to be executed with extended precision, depending on the
    requirements and numeric ranges to cover.
  + \f$d_c\f$ is strictly not negative, so the second division can be executed as a truncated
-   division. Furthermore the numerical range is obviously limted to the size of a leap century,
+   division. Furthermore the numerical range is obviously limited to the size of a leap century,
    so 32bit unsigned arithmetic fits perfectly.
  + The leap year rule looks rather strange after the 1st term, but it works:
     - The 1st term selects the last year in all 4-year cycles in a century: 3,7,11...95,99

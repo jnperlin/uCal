@@ -74,7 +74,7 @@ always 306 days. We have to remove them in the end again.
 
 Now, with the vagrant February at the end, we have several options. Evaluate _one_ of the
 following expressions, where \f$ 1 \leq M' \leq 12 \f$ is the *shifted* month and \f$d_y\f$ is
-the number of _elpased days before the start of the month_:
+the number of _elapsed days before the start of the month_:
 
 \f{eqnarray*}{
     d_y   & \gets & (0,31,61,92,122,153,184,214,245,275,306,337)[M' - 1] \\
@@ -88,7 +88,7 @@ the number of _elpased days before the start of the month_:
 
 We use the 3rd form, as the division can be executed as a shift. (It's also possible to scale this
 up so the the result can be gained by a full byte or word extraction! That can be useful if the
-target has no barrel shifter to execute shifts quickly.)
+target has no barrel-shift unit to execute shifts quickly.)
 
 And, well, yes, that's it!
 
@@ -159,6 +159,43 @@ If multiplications and shifts are fast, the linear interpolations can outperform
 lookups, fast as they already are. But random memory access can be a bottleneck due to cache
 misses, while reading and decoding linear code is easier to handle for most CPUs.
 If performance is a real issue, benchmark and profile the different options!
+
+
+\section rellez Expanding 2-digit Years
+
+Sometimes, only a 2-digit year is provided.  Obviously, expanding this to a full year since
+the epoch (Christian era, typically) needs some additional information.  One simple solution
+is to define a range of 100 years and map the two-digit year into that range.  This is a viable
+solution for e.g. truncated GPS time stamps, where a 2-digit year can be mapped into the range
+[198..2079].  Another approach is to get the expansion base from the current time, or from some
+other external means.
+
+
+If the day-of-week is known (e.g. from a raw GPS time stamp, or from a radio clock that provides
+that information, like the German DCF-77 signal) a different approach is possible:
+
+ + The Gregorian calendar has a full cycle of 146097 days. Unfortunately this is a multiple of 7,
+   so the cycles for weeks and the calendar are not independent. Also, 146097 days correspond to
+   400 years, which is also a multiple of 100.  That means that for any valid date with the year
+   reduced modulo 100, there can be only 4 different possible week days.
+
+ + The Julian calendar has a full cycle of only 1461 days or 4 years, but 1461 is not divisible
+   by 7.  So the LCM of the 4year-cycle and the week cycle is indeed 28 years, and this period
+   is called the Solar Cycle. And the least common multiple of 28 and 25 is 700, so every
+   combination of a date with a 2-digit year and a day-of-week can be mapped into an arbitrary
+   700-year cycle.
+
+For the Julian calendar, this is mostly an excercise.  For the Gregorian calendar, it can be
+used to recover the full date information over 400 year range and/or validate the input data:
+if the expansion fails, flagging an invalid input, some input data is not to be trusted.  Even
+if the expansion succeeds, the resulting date can be checked against further constraints, like
+being too far off into future or past.
+
+While the math is a bit tricky and involves using a multiplicative modular inverse MOD 7,
+the code itself can be rather compact and fast.  And over a 400-year period, there's no reason
+to think about the cycle base: use 1980, 1970, or even 1900.  To think a certain software will
+still be used in 300 years is probably sheer hubris...
+
 
 */
 // -*- that's all folks -*-

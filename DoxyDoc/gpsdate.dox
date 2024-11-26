@@ -44,7 +44,7 @@ modulus, retrieved by a floor division.
 
 Most GNSS receivers emit time/date information in the civil calendar format, as YY-MM-DD and
 hh-mm-ss.  Since the receiver also needs a base reference to do so, this is often baked into
-firmware -- with the the consequence that one cannot necessarily trust the date information!
+firmware -- with the consequence that one cannot necessarily trust the date information!
 
 Even if it is simple to map the 2-digit year range from 00 to 99 into 1980..2079, this time span
 covers 5 complete GPS eras, and we don not know into which and how the receiver maps the raw
@@ -65,14 +65,14 @@ This is plugging information from thin air -- every choice has pros and cons.
    it's _your_ choice, and you can rebuild more often.
 
  + Make the reference based on the current system time, with some slack provided to step
-   the time back.  If the system is roughly in sync (eyball & wristwatch suffice) this will
+   the time back.  If the system is roughly in sync (eyeball & wristwatch suffice) this will
    sync PLL-like.  Of course, if you're too far off, the lock will happen to the wrong era.
 
  + Make it a configurable. The most sure-fire way, but an option that needs care every 10
-   or 20 years might need some active monitoring to remin someone that it's time to define
+   or 20 years might need some active monitoring to remain someone that it's time to define
    a new base. (Pun not intended)
 
-IMHO, using a build stamp as fallback and something configurable (environment, config file,
+IMHO, using a build stamp as fallback and something configurable (environment, configuration file,
 you name it) makes the most sense for something in the "embedded" class. It needs occasional
 maintenance, which is admittedly a pain, but it gives predictable and reproducible results -- and
 there's only one location where adjustment is necessary.

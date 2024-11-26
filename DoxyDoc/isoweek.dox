@@ -58,14 +58,14 @@ So, with
  + \f$c_s,c_i\f$ as cycle shift and cycle index
  + \f$w_c\f$ as weeks in century
  
-let us calulate:
+let us calculate:
 
 \f{eqnarray*}{
-    q_c,r_c & \gets & \left \lfloor \frac{Y-1}{100} \right \rfloor \\
-    c_s     & \gets & \left \lfloor \frac{q_c + 2}{4} \right \rfloor \\
-    c_i     & \gets & q_c \bmod{4} \\
-    w_c     & \gets & \left \lfloor \frac{5431 r_c + (448,160,896,608)[c_i]}{1024} \right \rfloor \\
-    RDN     & \gets & 7 (5218 q_c - c_s + w_c) + 1 
+    (q_c,r_c) & \gets & \left \lfloor \frac{Y-1}{100} \right \rfloor \\
+    c_s       & \gets & \left \lfloor \frac{q_c + 2}{4} \right \rfloor \\
+    c_i       & \gets & q_c \bmod{4} \\
+    w_c       & \gets & \left \lfloor \frac{5431 r_c + (448,160,896,608)[c_i]}{1024} \right \rfloor \\
+    RDN       & \gets & 7 (5218 q_c - c_s + w_c) + 1 
 \f}
 
 Looking close, there's only _one_ division that cannot be expressed by arithmetic shift, and
@@ -83,18 +83,19 @@ Date from a linear day count.
 
 Since the Week Calendar is, well, week-aligned, we can do a floor division by 7 to get the number
 of weeks elapsed since epoch first. Then the remaining calculations are all centered on weeks.
+(This is basically the reverse of the algorithm above.)
 
 So, with
  + \f$w, d_w\f$ as weeks since epoch and days since start-of-week
  + \f$q_c, r_c\f$ as elapsed centuries and scaled weeks in century
  + \f$q_y,w'\f$ as years in century and modified weeks in year
 
-let us calulate:
+let us calculate:
 
 \f{eqnarray*}{
-    w,d_w   & \gets & \left \lfloor \frac{RDN-1}{7} \right \rfloor \\
-    q_c,r_c & \gets & \left \lfloor \frac{4 w + 2}{20871} \right \rfloor \\
-    q_y,w'  & \gets & \left \lfloor \frac{
+    (w,d_w)   & \gets & \left \lfloor \frac{RDN-1}{7} \right \rfloor \\
+    (q_c,r_c) & \gets & \left \lfloor \frac{4 w + 2}{20871} \right \rfloor \\
+    (q_y,w')  & \gets & \left \lfloor \frac{
                   157 \left\lfloor\frac{r_c}{4}\right\rfloor + (84,128,16,62)[q_c \bmod{4}]
                 }{8192} \right \rfloor \\
     D & \gets & d_w + 1 \\
@@ -102,7 +103,10 @@ let us calulate:
     Y & \gets & 100 q_c + q_y + 1
 \f}
 
-That's the fastest way to go through the ISO8601 Week Calendar I've seen so far.
+That's the fastest way to go through the ISO8601 Week Calendar I've seen so far. Some notes:
+
+ + \f$(RDN - 1)\f$ might suffer from an underflow
+ + all other computations fit well in the type used to represent \f$RDN\f$
 
 */
 // -*- that's all folks -*-

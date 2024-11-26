@@ -22,8 +22,8 @@ This component deals with a few time scales:
 
  + The \ref grecal is what most Westerners mean when they talk about
    a calendar.
- + The \ref julcal predates the Gregorian Calendar; it is still used in east-europe
-   orthodox christian religeous systems.
+ + The \ref julcal predates the Gregorian Calendar; it is still used in east-Europe
+   orthodox christian religious systems.
  + The \ref isocal. Not so widely used; Years have always 52 or 53 full weeks,
    and the year always starts on a Monday. (It's the Monday closest to the year start of
    the year with the same number in the Gregorian Calendar.)
@@ -46,7 +46,7 @@ is on the DO-NOT list, and will remain there!
 
 There's a page dedicated to details, see \ref ccalcommon. But for starters, here a short overview.
 
-Most calendars use a day as the obvious basic unit, and the Chrstian Era calendars group them into
+Most calendars use a day as the obvious basic unit, and the Christian Era calendars group them into
 weeks, months of different lengths, and years of different lengths:
 
  + a week has 7 days
@@ -55,7 +55,7 @@ weeks, months of different lengths, and years of different lengths:
  + a leap day is inserted at the end of February, which is the 2nd month of the year.
 
 
-Julian and Gregorian calender only differ in their leap year rule.
+Julian and Gregorian calendar only differ in their leap year rule.
  + In the Julian Calendar, every 4th year is a leap year. I.o.w., the year number must be
    divisible by 4.
  + In the Gregorian Calendar, for year number to denote a leap year, it has the additional
@@ -72,7 +72,7 @@ and difficult to understand.
 
 \section impdetail Implementation details
 
-Calendar calculations thrieve on division operations. Forunately the dividers are constants,
+Calendar calculations thrive on division operations. Fortunately the dividers are constants,
 albeit often very odd ones. (In the metaphorical _and_ the mathematical sense!)
 
 So we have to do many divisions using constants, and we have to do divisions rounding towards
