@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <sys/random.h>
 #include <time.h>
 #include <unity.h>
@@ -41,6 +42,45 @@ void tearDown(void)
 }
 
 #define tabsize 1024
+
+
+#if INT_MAX >= INT32_MAX
+# define DIV_F div
+# define DIV_T div_t
+#else
+# error no matching 'div()' function available!?!
+#endif
+
+#ifdef __GNUC__
+__attribute__((noinline))
+#endif
+static int32_t asr_by_div(int32_t x, int s)
+{
+    DIV_T qr = { .quot = x, .rem = 0 };
+    while (s > 0) {
+        int s0 = (s > 16) ? 16 : s;
+        qr = DIV_F(qr.quot, (1 << s0));
+        qr.quot -= (qr.rem < 0);
+        s -= s0;
+    }
+    return qr.quot;
+}
+
+static void test_asrONE(void) {
+    for (int s = 0; s < 32; ++s) {
+        int32_t q1 = ucal_i32Asr(-1, s);
+        int32_t q2 = asr_by_div(-1, s);
+        TEST_ASSERT_EQUAL(q2, q1);
+    }
+}
+
+static void test_asrMAX(void) {
+    for (int s = 0; s < 32; ++s) {
+        int32_t q1 = ucal_i32Asr(INT32_MIN, s);
+        int32_t q2 = asr_by_div(INT32_MIN, s);
+        TEST_ASSERT_EQUAL(q2, q1);
+    }
+}
 
 static int ref_mod7(int64_t v64)
 {
@@ -245,6 +285,8 @@ static void test_gpsDate2(void) {
 int  main(int argc, char **argv)
 {
     UNITY_BEGIN();
+    RUN_TEST(test_asrONE);
+    RUN_TEST(test_asrMAX);
     RUN_TEST(test_BuildDate);
     RUN_TEST(test_mod7);
     RUN_TEST(test_dsplit);
