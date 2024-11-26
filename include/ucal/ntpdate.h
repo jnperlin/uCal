@@ -30,7 +30,7 @@ static inline uint32_t ucal_TimeToNtp(time_t tt) {
 }
 
 /// @brief map a NTP seconds value into the @c time_t time scale
-/// 
+///
 /// Map the given NTP-scale seconds value to @c time_t value that is in [pivot-2³¹, pivot+2³¹[.
 /// If the pivot is NULL, the current system time will be substituted.
 /// @note Will never deliver time stamps before the UNIX epoch (1970-01-01).

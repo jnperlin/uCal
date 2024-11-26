@@ -30,14 +30,14 @@ ucal_NtpToTime(
     if (sizeof(time_t) > sizeof(uint32_t)) {
         // we have some real work to do... start with getting the expansion base.
         time_t tbase = pivot ? *pivot : time(NULL);
-        if (tbase > INT32_MAX) {
-            tbase -= 0x80000000ul;
+        if (tbase > UINT32_C(0x80000000)) {
+            tbase -= UINT32_C(0x80000000);
         } else {
             tbase = 0;
         }
         // now do a periodic expansion (mod 2³²). Which is dead-pan easy :)
-        secs += UCAL_sysPhiNTP;     // align NTP scale to Unix scale (mod 2³² implicitt!)
-        secs -= tbase;              // get cycle difference          (mod 2³² implicitt!)
+        secs += UCAL_sysPhiNTP;     // align NTP scale to Unix scale (implicit mod 2³²!)
+        secs -= tbase;              // get cycle difference          (implicit mod 2³²!)
         return tbase + secs;        // add difference to base, and that's it!
     } else {
         // Hmpf. This system will have trouble soon... but here we go anyway:

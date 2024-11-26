@@ -64,7 +64,7 @@ ucal_GpsMapRaw1(
     // Here we try to keep our numbers down by essentially using calculations based on DAYS, since
     // we can easily factor the time-of-day out of the calculation.  Then it's only a matter of
     // aligning the day cycles.
-    
+
     // First we split the time-in-week to days and time, applying the leap second correction
     // on the fly:
     ucal_iu32DivT dt = ucal_iu32SubDiv(t, ls, 86400u);
@@ -105,7 +105,7 @@ ucal_GpsMapRaw2(
     //
     // We avoid that issue by calculating the cycle difference in int64_t and do a proper floor
     // division on it, either open-coded on 64bit targets and via library function otherwise.
-    
+
     static const int32_t wcycle = INT32_C(604800);		// seconds in a week cycle
     static const int32_t fcycle = INT32_C(604800) * 1024;	// seconds in a full cycle
 
@@ -170,7 +170,7 @@ ucal_GpsFullYear(
 	    // If we have a valid day-of-week, try inverting Zeller's congruence to get the year.
 	    // Otherwise just do a fixed mapping to 1980..2079.
         y = (int16_t)ucal_iu32Div(y, 100u).r;
-        if ((wd >= 0) && (1980 <= (z = ucal_RellezGD(y, m, d, wd, 1980)))) {	    
+        if ((wd >= 0) && (1980 <= (z = ucal_RellezGD(y, m, d, wd, 1980)))) {
             y = z;
         } else if (y >= 80) {
             y += 1900;

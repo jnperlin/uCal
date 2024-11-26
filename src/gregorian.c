@@ -48,13 +48,13 @@ ucal_DaysToYearsGD(
     bool   *pLY)
 {
     uint32_t sday, qy;
-    int32_t qc;
+    int32_t  qc;
     // We start with splitting the RDN into elapsed centuries, using scaled days.  We want to
     // evaluate ((rdn - 1) * 4 + 3) / 146097, which is a fractional fix-point division.
     // First, we observe that (rdn - 1) * 4 + 3 == rdn * 4 - 1, and this term will be negative
     // if and only if rdn <= 0.
     if (sizeof(size_t) > sizeof(int32_t)) {
-        // 'size_t' is a wider type tahn 'int32_t', and it seems to fit into a single
+        // 'size_t' is a wider type than 'int32_t', and it seems to fit into a single
         // register. We use direct floor division.
         size_t m = -(rdn <= 0);
         size_t n = ((size_t)rdn << 2) - 1;
@@ -77,7 +77,7 @@ ucal_DaysToYearsGD(
     // The elapsed year cycles come next. This is again a fractional fixpoint division, but since
     // 'sday' is now in range [0,146097] and unsigned, we do a simple unsigned division op for
     // that.
-    sday |= 3;
+    sday |= 3;              // shift right by 2, shift left by 2, add 3: all fused together!
     qy    = sday / 1461u;
     sday -= qy * 1461u;
 
@@ -133,7 +133,7 @@ int32_t
 ucal_YearStartGD(
     int16_t y)
 {
-    // We use the shifted calendar (starting with March) for this conversion!
+    // Here we  don't need to shift the calendar... just go from ordinal to cardinal year number.
     int32_t ey = (int32_t)y - 1;
     return (ey * 365) + ucal_LeapDaysInYearsGD(ey) + 1;
 }
@@ -179,7 +179,7 @@ ucal_RellezGD(
 
     uint16_t c;
 
-    // get input data as *elapsed* units (or normalised), bail on nonsense
+    // get input data as *elapsed* units (or normalised), bail out on nonsense
     y %= 100;      // don't check, just reduce.
     --d;
     w %= 7;        // don't check, just reduce.
@@ -198,8 +198,8 @@ ucal_RellezGD(
 
     // Check the day-of-month, assuming every 4th year of a century is a leap year. This needs
     // some special care: The last day of a (shifted) great calendar cycle (that is, Feb-29 of a
-    // quadricentennial year) *must* be a Tuesday, and all other possibilities are ruled out. Since
-    // the congruent inversion algorithm cannot detect this below, a special rule is needed
+    // quadricentennial year) *must* be a Tuesday, and all other possibilities are ruled out.
+    // Since the congruent inversion algorithm cannot detect this below, a special rule is needed
     // here. It is important that for *valid* input the calculation below produces the proper
     // result, but it fails to reject invalid input for this special case.
     if (y == 99 && m == 11 && d == 28) {

@@ -92,21 +92,31 @@ static inline uint32_t ucal_u64hi(uint64_t v) {
 
 #if MACHINE_ASR
 static inline int32_t ucal_i32Asr(int32_t v, unsigned s) {
-    return v >> s;
+    return (s < 32) ? (v >> s) : -(v < 0);
 }
 static inline int64_t ucal_i64Asr(int64_t v, unsigned s) {
-    return v >> s;
+    return (s < 64) ? (v >> s) : -(v < 0);
 }
 #else
 static inline int32_t ucal_i32Asr(int32_t v, unsigned s) {
-    uint32_t m = -(v < 0);
-    uint32_t u = m ^ ((m ^ v) >> s);
-    return ucal_u32_i32(u);
+    if (s < 32) {
+        uint32_t m = -(v < 0);
+        uint32_t u = m ^ ((m ^ v) >> s);
+        v = ucal_u32_i32(u);
+    } else {
+        v = -(v < 0);
+    }
+    return v;
 }
 static inline int64_t ucal_i64Asr(int64_t v, unsigned s) {
-    uint64_t m = -(v < 0);
-    uint64_t u = m ^ ((m ^ v) >> s);
-    return ucal_u64_i64(u);
+    if (s < 64) {
+        uint64_t m = -(v < 0);
+        uint64_t u = m ^ ((m ^ v) >> s);
+        v = ucal_u64_i64(u);
+    } else {
+      v = -(v < 0);
+    }
+    return v;
 }
 #endif /*MACHINE_ASR*/
 
@@ -173,8 +183,8 @@ static inline int32_t ucal_i32Mod7(int32_t x) {
 }
 
 /// @brief mathematical/floor (mod 7) sum
-/// @param a operand 1
-/// @param b operand 1
+/// @param a addend 1
+/// @param b addend 2
 /// @return (a + b) (mod 7)
 static inline int32_t ucal_i32AddMod7(int32_t a, int32_t b) {
     uint32_t xred = (UINT32_C(7) << 17)
@@ -184,8 +194,8 @@ static inline int32_t ucal_i32AddMod7(int32_t a, int32_t b) {
 }
 
 /// @brief mathematical/floor (mod 7) difference
-/// @param a operand 1
-/// @param b operand 1
+/// @param a minuend
+/// @param b subtrahend
 /// @return (a - b) (mod 7)
 static inline int32_t ucal_i32SubMod7(int32_t a, int32_t b) {
     uint32_t xred = (UINT32_C(7) << 17)
@@ -263,9 +273,14 @@ typedef struct {
 /// @brief Granlund-Möller division step
 ///
 /// This is a single division core step a la Granlund/Möller.  As with other extended-precision
-/// dicision algorithms, it imposes some restrictions on the diveder, namely that the LSB is
+/// dicision algorithms, it imposes some restrictions on the diveder, namely that the MSB is
 /// actually set. (Please note that this can be easily achieved by shifting/scaling of the
 /// original problem!)
+///
+/// @note The algorithm is effective when dividing by a power of two (it gives the correct
+///       results) but it is definitely not efficient in that case.  Consider shifting and
+///       masking for division by a power of two.
+///
 /// @param u1   high part of dividend, \f$ 0 \leq u1 < d \f$
 /// @param u0   low part of dividend
 /// @param d    normalised divider, \f$ 2^{31} \leq d < 2^{32} \f$
@@ -277,9 +292,9 @@ extern ucal_u32DivT ucal_u32DivGM(uint32_t u1, uint32_t u0, uint32_t d, uint32_t
 /// @brief chained Granlund-Möller division to divide @c int64_t by @c uint32_t
 ///
 /// This function takes care of the gritty details when using Granlund/Möller style division on a
-/// signed 64bit didend with an unsigned 32bit divider.  The divider and inverse must be adjusted
-/// accordingly the core step, and the function needs to know which normlisation shift must be
-/// applied to prepare the condition input and output of the core step.
+/// signed 64bit dividend with an unsigned 32bit divider.  The divider and inverse must be
+/// adjusted accordingly the core step, and the function needs to know which normlisation shift
+/// must be applied to prepare the condition input and output of the core step.
 /// @see ucal_u32DivGM
 /// @param u    dividend (numerator)
 /// @param d    normalised divider (denominator)
@@ -287,6 +302,21 @@ extern ucal_u32DivT ucal_u32DivGM(uint32_t u1, uint32_t u0, uint32_t d, uint32_t
 /// @param s    pre/post shift value
 /// @return     tuple with quotient and remainder
 extern ucal_i64u32DivT ucal_i64u32DivGM(int64_t u, uint32_t d, uint32_t v, unsigned s);
+
+// -------------------------------------------------------------------------------------
+/// @brief chained Granlund-Möller division to divide @c uint64_t by @c uint32_t
+///
+/// This function takes care of the gritty details when using Granlund/Möller style division on a
+/// unsigned 64bit dividend with an unsigned 32bit divider.  The divider and inverse must be
+/// adjusted accordingly the core step, and the function needs to know which normlisation shift
+/// must be applied to prepare the condition input and output of the core step.
+/// @see ucal_u32DivGM
+/// @param u    dividend (numerator)
+/// @param d    normalised divider (denominator)
+/// @param v    approximated inverse of d
+/// @param s    pre/post shift value
+/// @return     tuple with quotient and remainder
+extern ucal_i64u32DivT ucal_u64u32DivGM(uint64_t u, uint32_t d, uint32_t v, unsigned s);
 
 // -------------------------------------------------------------------------------------
 /// @brief split seconds into full days and seconds since midnight
@@ -298,7 +328,7 @@ extern ucal_i64u32DivT ucal_i64u32DivGM(int64_t u, uint32_t d, uint32_t v, unsig
 ///       @c time() or similar, it will yield days and seconds in the UNIX epoch.
 ///
 /// @param  tt  @c time_t seconds to split
-/// @returns    tuple with days as quotient and seconds in day as remainder 
+/// @returns    tuple with days as quotient and seconds in day as remainder
 extern ucal_TimeDivT ucal_TimeToDays(time_t tt);
 
 // -------------------------------------------------------------------------------------
@@ -320,7 +350,7 @@ extern ucal_TimeDivT ucal_TimeToRdn(time_t tt);
 /// This uses the UNSHIFTED calender and therefore needs the leap year indicator.
 /// @param ed   elapsed days
 /// @param isLY year is a leap year
-/// @return     tupe with monts as quotient and days in month as remainder
+/// @return     tuple with monts as quotient and days in month as remainder
 extern ucal_iu32DivT ucal_DaysToMonth(uint_fast16_t ed, bool isLY);
 
 // -------------------------------------------------------------------------------------
@@ -329,15 +359,15 @@ extern ucal_iu32DivT ucal_DaysToMonth(uint_fast16_t ed, bool isLY);
 /// Shifts the calendar by adding ten months, normalises the result and returns the years
 /// resulting from the normalisation (can be negative!) and the accummulated days in the current
 /// year.
-/// 
+///
 /// @note This uses the SHIFTED calendar starting with March!
 /// @param m    calendar month (can be off-scale)
-/// @return     number of elapsed days in these elapsed months
+/// @return     tuple of elapsed years and number of elapsed days in these elapsed months
 extern ucal_iu32DivT ucal_MonthsToDays(int16_t m);
 
 // -------------------------------------------------------------------------------------
 /// @brief get the build date (from unspecified zone!) as RDN
-/// @return RDN of build date 
+/// @return RDN of build date
 int32_t ucal_BuildDateRdn(void);
 
 // -------------------------------------------------------------------------------------

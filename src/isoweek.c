@@ -23,11 +23,8 @@
 #include "ucal/common.h"
 #include "ucal/isoweek.h"
 
-// ----------------------------------------------------------------------------------------------
-// Given a number of elapsed (ISO-)years since the begin of the christian era, return the number
-// of elapsed weeks corresponding to the number of years.
-int32_t
-ucal_WeeksInYearsWD(
+static int64_t
+_weeksInYears(
     int32_t years)
 {
     // use: w = (y * 53431 + b[c]) / 1024 as interpolation
@@ -38,11 +35,33 @@ ucal_WeeksInYearsWD(
     ucal_iu32DivT s100 = ucal_iu32Div(years, 100u);
 
     // Assuming a century is 5218 weeks, we have to remove one week in 400 years for the
-    // defective 2nd century. Can be easily calculated as "(century + 2) // 4".
+    // defective 2nd century. Can be easily calculated as "floor((century + 2) / 4)", which
+    // in turn can be expressed as arithmetic shift.
 
-    return (s100.q * 5218)
+    return ((int64_t)s100.q * 5218)
          - ucal_i32Asr((s100.q + 2), 2)
          + ((s100.r * 53431u + bctab[s100.q & 3u]) >> 10);
+}
+
+
+// ----------------------------------------------------------------------------------------------
+// Given a number of elapsed (ISO-)years since the begin of the christian era, return the number
+// of elapsed weeks corresponding to the number of years.
+int32_t
+ucal_WeeksInYearsWD(
+    int32_t years)
+{
+    int64_t w = _weeksInYears(years);
+
+    if (w > INT32_MAX) {
+        errno = ERANGE;
+        return INT32_MAX;
+    } else if (w > INT32_MAX) {
+        errno = ERANGE;
+        return INT32_MAX;
+    } else {
+        return (int32_t)w;
+    }
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -50,7 +69,8 @@ int32_t
 ucal_YearStartWD(
     int16_t y)
 {
-    return ucal_WeeksInYearsWD((int32_t)y - 1) * 7 + 1;
+    // no overflow check needed: a 16bit year cannot overflow 32bit weeks or days!
+    return (int32_t)_weeksInYears((int32_t)y - 1) * 7 + 1;
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -98,8 +118,9 @@ ucal_SplitEraWeeksWD(
     cy = sw >> 13;      // sw / 8192
     sw = sw & 8191;     // sw % 8192
 
-    // assemble elapsed years and downscale the elapsed weeks in the year.
-    return (ucal_iu32DivT){ .q = (100 * cc + cy), .r = (sw / 157u) };
+    // assemble elapsed years and downscale the elapsed weeks in the year. (We give the compiler
+    // a strong hint that 'sw' fits in 16 bit and he might pull tricks based on that.)
+    return (ucal_iu32DivT){ .q = (100 * cc + cy), .r = ((uint16_t)sw / 157u) };
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -120,7 +141,7 @@ ucal_RdnToDateWD(
 {
     bool retv = false;
     ucal_iu32DivT qr;
-   
+
     qr = ucal_iu32SubDiv(rdn, 1, 7u);
     into->dWDay = qr.r + 1;
 

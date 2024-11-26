@@ -35,7 +35,7 @@
 #endif
 
 // ----------------------------------------------------------------------------------------------
-/// @brief month length table, regular 
+/// @brief month length table, regular
 ///
 /// Table with days of month, zero-based. Used internally for validation only. Contains 2 vectors,
 /// one for regular years at index 0 and one for leap years at index 1.
@@ -46,7 +46,7 @@ const uint8_t _ucal_mdtab[2][12] = {
 };
 
 // ----------------------------------------------------------------------------------------------
-/// @brief month length table, shifted 
+/// @brief month length table, shifted
 ///
 /// Table with days of month, shifted for year starting at March, zero-based. Used internally for
 /// validation only. Contains 2 vectors, one for regular years at index 0 and one for leap years
@@ -120,7 +120,7 @@ ucal_u32DivGM(
       q0 = (uint32_t)accu;
       q1 = (uint32_t)(accu >> 32) + u1 + 1;
     }
-    u0 -= q1 * d;               // u0 becomes the remainder (value no longer needed)
+    u0 -= q1 * d;               // u0 becomes the remainder (orig. value no longer needed)
     if (u0 > q0) {              // The 'unpredictable' condition
         q1 -= 1;
         u0 += d;
@@ -132,6 +132,38 @@ ucal_u32DivGM(
     return (ucal_u32DivT){ .q = q1, .r = u0 };
 }
 
+ucal_i64u32DivT
+ucal_u64u32DivGM(
+    uint64_t u,
+    uint32_t d,
+    uint32_t v,
+    unsigned s)
+{
+    ucal_u32DivT    xdiv;
+    uint32_t        ul, um, uh;
+
+    // get the 3 limbs for the division steps, avoiding excessive shifts
+    if (s &= 31) {
+        uh = (uint32_t)(u >> (64 - s));
+    } else {
+        uh = 0;
+    }
+    um = (uint32_t)(u >> (32 - s));
+    ul = (uint32_t)u << s;
+
+    // do two chained divisions
+    xdiv = ucal_u32DivGM(uh, um, d, v);
+    um = xdiv.q;
+    xdiv = ucal_u32DivGM(xdiv.r, ul, d, v);
+    ul = xdiv.q;
+
+    // assemble quotient & final result
+    u = ((uint64_t)um << 32) | ul;
+    return (ucal_i64u32DivT){
+        .q = (int64_t)u,    // no overflow possible here for real division (d > 2³¹)
+        .r = (xdiv.r >> s)
+    };
+}
 
 ucal_i64u32DivT
 ucal_i64u32DivGM(
@@ -140,25 +172,28 @@ ucal_i64u32DivGM(
     uint32_t v,
     unsigned s)
 {
-    ucal_u32DivT   xdiv;
-    const uint32_t m = -(u < 0);
+    ucal_u32DivT    xdiv;
+    const uint32_t  m  = -(u < 0);
+    uint64_t        ut = (uint64_t)u;
+    uint32_t        ul, um, uh;
 
-    // get the 3 limbs for the division steps
-    uint64_t ut  = (uint64_t)u;
-    uint32_t utl = m ^ (uint32_t)(ut << s);
-    uint32_t utm = m ^ (uint32_t)(ut >> (32 - s));
-    uint32_t uth = s ? (m >> (32 - s)) ^ (uint32_t)(ut >> (64 - s)) : 0;
+    // get the 3 limbs for the division steps, avoiding excessive shifts
+    if (s &= 31) {
+        uh = (uint32_t)(ut >> (64 - s)) | (m << s);
+    } else {
+        uh = m;
+    }
+    um = (uint32_t)(ut >> (32 - s));
+    ul = (uint32_t)ut << s;
 
-    // do two chained divisions
-    xdiv = ucal_u32DivGM(uth, utm, d, v);
-    utm = xdiv.q;
-    xdiv = ucal_u32DivGM(xdiv.r, utl, d, v);
-    utl = xdiv.q;
-    // assemble quotient
-    ut   = m ^ utm;
-    ut <<= 32;
-    ut  |= m ^ utl;
-    // assemble result
+    // do two chained divisions. We mix-in the XOR masking on-the-fly
+    xdiv = ucal_u32DivGM((uh ^ m), (um ^ m), d, v);
+    um = xdiv.q ^ m;
+    xdiv = ucal_u32DivGM(xdiv.r, (ul ^ m), d, v);
+    ul = xdiv.q ^ m;
+
+    // assemble quotient & final result
+    ut = ((uint64_t)um << 32) | ul;
     return (ucal_i64u32DivT){
         .q = ((m) ? -(int64_t)(~ut) - 1 : (int64_t)ut),
         .r = (((m ^ xdiv.r) + (m & d)) >> s)
@@ -170,7 +205,7 @@ ucal_TimeToDays(
     time_t tt)
 {
     ucal_TimeDivT retv;
-    
+
     if (sizeof(time_t) <= sizeof(size_t)) {
         // 'time_t' fits in a register, or so it seems. Do a single signed/unsigned floor
         // division, and that's it.
@@ -179,7 +214,7 @@ ucal_TimeToDays(
         retv.q = m ? -(time_t)(~q) - 1 : (time_t)q;
         retv.r = (uint32_t)tt - (uint32_t)q * 86400u;
     } else {
-        // Assume a 64bit time on a 32bit machine. Still a division of int64_t by uint32_t
+        // Assume a 64bit time_t on a 32bit machine. Still a division of int64_t by uint32_t
         // constant... it just doesn't look so nice!
         ucal_i64u32DivT ds = ucal_i64u32DivGM(
             (int64_t)tt, 0xa8c00000, 0x845c8a0c, 15);
@@ -217,11 +252,16 @@ ucal_iu32DivT
 ucal_MonthsToDays(
     int16_t m)
 {
+    // shift months & normalize result by a floor division with 12
     int32_t  em = m + UINT32_C(9);
     uint32_t mm = -(em < 0);
     uint32_t qm = mm ^ ((mm ^ em) / 12u);
     em -= qm * 12u;
-    return (ucal_iu32DivT){ .q = ucal_u32_i32(qm), .r = ((UINT32_C(979) * em + 16) >> 5) };
+    // the resulting days-in-year are easy now (linear interpolation method)
+    return (ucal_iu32DivT){
+        .q = ucal_u32_i32(qm),
+        .r = ((UINT32_C(979) * em + 16) >> 5)
+    };
 }
 
 static int32_t
