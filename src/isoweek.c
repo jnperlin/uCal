@@ -23,16 +23,52 @@
 #include "ucal/common.h"
 #include "ucal/isoweek.h"
 
+// ----------------------------------------------------------------------------------------------
+// calculating the century-specific interpolation offsets for converting years
+// to weeks and weeks to years can be obtained either by a table lookup or by a
+// numeric transformation.  The table lookup is a bit easier to understand, but
+// the numeric transformations are potentially faster.
+//
+// The transformations are based on the fact that there is a certain regularity
+// in the offsets and that there is actually a range of possible offsets for
+// each century. The table values are chosen to have the minimum number of bits
+// set, but that choice is arbitrary -- the numeric transformations (which are
+// deduced by some trial and error) produce different values from the possible
+// corridor.
+//
+// The first steps re-map the century cycle from (0,1,2,3) to (3,5,0,2) or
+// (2,0,5,3); the transformed index is used in a linear equation to yield the
+// desired offsets.  The coefficients are derived by a linear least-square fit,
+// rounded to the nearest integer, as a starting point.
+
+static inline unsigned ccofs_y2w(unsigned cc) {
+  #if 1 || !defined(__thumb__)
+    cc = (1u - cc) & 3;
+    cc = (cc << 1) - (cc >> 1);
+    return 157u + cc * 146u;
+  #else
+    return ((uint16_t[4]){ 448, 160, 896, 608 })[cc & 3];
+  #endif
+}
+
+static inline unsigned ccofs_w2y(unsigned cc) {
+  #if 1 || !defined(__thumb__)
+    cc = (2u + cc) & 3u;
+    cc = (cc << 1) - (cc >> 1);
+    return 18u + cc * 22u;
+  #else
+    return ((uint16_t[4]){ 84, 128, 16, 62 })[cc & 3];
+  #endif
+}
+
 static int64_t
 _weeksInYears(
     int32_t years)
 {
     // use: w = (y * 53431 + b[c]) / 1024 as interpolation
 
-    static const uint16_t bctab[4] = { 448, 160, 896, 608 };
-
     // split years into centuries first
-    ucal_iu32DivT s100 = ucal_iu32Div(years, 100u);
+    const ucal_iu32DivT s100 = ucal_iu32Div(years, 100u);
 
     // Assuming a century is 5218 weeks, we have to remove one week in 400 years for the
     // defective 2nd century. Can be easily calculated as "floor((century + 2) / 4)", which
@@ -40,9 +76,8 @@ _weeksInYears(
 
     return ((int64_t)s100.q * 5218)
          - ucal_i32Asr((s100.q + 2), 2)
-         + ((s100.r * 53431u + bctab[s100.q & 3u]) >> 10);
+         + ((s100.r * 53431u + ccofs_y2w(s100.q)) >> 10);
 }
-
 
 // ----------------------------------------------------------------------------------------------
 // Given a number of elapsed (ISO-)years since the begin of the christian era, return the number
@@ -82,9 +117,8 @@ ucal_SplitEraWeeksWD(
     int32_t weeks)
 {
     // use: y = (w * 157 + b[c]) / 8192 as interpolation
-    static const uint8_t bctab[4] = { 84, 128, 16, 62 };
 
-    int32_t cc, ci;
+    int32_t cc;
     uint32_t sw, cy, Q;
 
     // Use two fast cycle-split divisions again. Herew e want to execute '(weeks * 4 + 2) /%
@@ -93,11 +127,11 @@ ucal_SplitEraWeeksWD(
     // This is of course (again) susceptible to internal overflow if coded directly in 32bit. And
     // again we use 64bit division on a 64bit target and extended division otherwise.
     if (sizeof(size_t) > sizeof(int32_t)) {
-        /* Full floor division with 64bit values. */
+        // full floor division with 64bit values
         size_t m = -(weeks < 0);
         size_t n = ((size_t)weeks << 2) | 2u;
-        Q = (uint32_t)(m ^ ((m ^ n) / 20871));
-        sw = (uint32_t)(n - Q * 20871);
+        Q = (uint32_t)(m ^ ((m ^ n) / 20871u));
+        sw = (uint32_t)(n - Q * 20871u);
     } else {
         // we use a single Granlund-Möller step again
         uint32_t m = -(weeks < 0);
@@ -110,11 +144,10 @@ ucal_SplitEraWeeksWD(
         sw = ((qr.r >> 17) ^ m) + (UINT32_C(20871) & m);
     }
 
-    ci = Q & 3u;
     cc = ucal_u32_i32(Q);
 
     // Split off years; sw >= 0 here! The scaled weeks in the years are scaled up by 157 afterwards.
-    sw = (sw >> 2) * 157u + bctab[ci];
+    sw = (sw >> 2) * 157u + ccofs_w2y(Q);
     cy = sw >> 13;      // sw / 8192
     sw = sw & 8191;     // sw % 8192
 

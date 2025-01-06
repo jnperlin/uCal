@@ -293,6 +293,7 @@ for cc in range(4):
         ys = isoweek_yearstart(cc * 100 + yi + 1)
         yt.append((yi, (ys - cs)))
     ytable.append(yt)
+#ytable = ytable[2:4] + ytable[0:2]
 
 print_header("ISO8601 week calendar, years in century to weeks")
 wdn(128)
@@ -304,4 +305,34 @@ for ci, seqn in enumerate(ytable):
 
 print_header("ISO8601 week calendar, weeks in century to years")
 wdn(2048)
+
+
+xc1=((84, 86, 84), (128, 131, 128), (16, 18, 16), (61, 63, 62))
+
+def xc1_calc(i: int) -> int:
+    " arithmetic interpolation "
+    i = (2 + i) & 3
+    k = (i << 1) - (i >> 1)
+    return 18 + k * 22
+    #return 17 + ((k * 45) >> 1)
+
+for ci in range(4):
+    co = xc1_calc(ci)
+    print(f"{xc1[ci][0]} <= {co} <= {xc1[ci][1]}")
+    assert xc1[ci][0] <= co <= xc1[ci][1]
+
+xc2=((436, 462, 448), (144, 170, 160), (876, 902, 896), (584, 610, 608))
+
+def xc2_calc(i: int) -> int:
+    " arithmetic interpolation "
+    i = (1 - i) & 3
+    k = (i << 1) - (i >> 1)
+    #return 160 + k * 145
+    return 157 + k * 146
+
+for ci in range(4):
+    co = xc2_calc(ci)
+    #print(f"{xc2[ci][0]} <= {co} <= {xc2[ci][1]}")
+    assert xc2[ci][0] <= co <= xc2[ci][1]
+
 # -*- that's all folks -*-
