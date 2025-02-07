@@ -29,9 +29,9 @@ set(CMAKE_C_STANDARD_REQUIRED TRUE)
 add_subdirectory(Unity)
 
 if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
-  add_compile_options(-Wall -pedantic -Wunused -Wmissing-prototypes)
+  add_compile_options(-Wall -Wextra -pedantic -Wunused -Wmissing-prototypes)
 elseif(CMAKE_C_COMPILER_ID STREQUAL "GNU")
-  add_compile_options(-Wall -pedantic -Wunused -Wmissing-prototypes)
+  add_compile_options(-Wall -Wextra -pedantic -Wunused -Wmissing-prototypes)
 elseif(CMAKE_C_COMPILER_ID STREQUAL "Intel")
   # using Intel C++
 elseif(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
@@ -99,7 +99,17 @@ enable_testing()
 
 include_directories("${PROJECT_SOURCE_DIR}/include")
 
-add_library(ucal STATIC src/common.c src/gregorian.c src/julian.c src/gpsdate.c src/isoweek.c src/ntpdate.c)
+add_library(ucal STATIC)
+target_sources(ucal PRIVATE
+  src/common.c
+  src/gregorian.c
+  src/julian.c
+  src/gpsdate.c
+  src/isoweek.c
+  src/ntpdate.c
+  src/tsdecode.c
+)
+# the next dependency triggers regeneration of calconst.h if python is present...
 if(Python_FOUND)
   target_sources(ucal PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/ucal/calconst.h)
 endif()
@@ -113,8 +123,12 @@ target_link_libraries(test-perf ucal unity)
 add_executable(test-isow tests/test-isow.c)
 target_link_libraries(test-isow ucal unity)
 
+add_executable(test-adec tests/test-adec.c)
+target_link_libraries(test-adec ucal unity)
+
 add_test(NAME ucal-test COMMAND test-calc)
 add_test(NAME ucal-perf COMMAND test-perf)
+add_test(NAME ucal-isow COMMAND test-isow)
+add_test(NAME ucal-adec COMMAND test-adec)
 
-add_executable(testdiv scripts/__attic__/nrdiv.c)
 # -*- that's all folks -*-
