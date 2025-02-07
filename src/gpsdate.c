@@ -81,7 +81,7 @@ ucal_GpsMapRaw1(
     days = ucal_iu32SubDiv((days + 1), baseRdn, (7 * 1024)).r;
 
     // Add days to base, checking for potential overflow
-    if (days > (uint32_t)INT32_MAX - (uint32_t)baseRdn) {
+    if ((uint32_t)days > (uint32_t)INT32_MAX - (uint32_t)baseRdn) {
         dt.q = INT32_MAX;
         errno = ERANGE;
     } else {

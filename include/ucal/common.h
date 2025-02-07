@@ -33,8 +33,11 @@
 CDECL_BEG
 
 // ----------------------------------------------------------------------------------------------
-// Days of month, shifted, zero-based. For validation only.
+// Days of month, shifted, zero-based (MAR=0). For validation only.
 extern const uint8_t _ucal_sdtab[2][12];
+// ----------------------------------------------------------------------------------------------
+// Days of month, regular/unshifted, zero-based (JAAN=0). For validation only.
+extern const uint8_t _ucal_mdtab[2][12];
 
 typedef enum {
     ucal_wdSUN0 = 0,
@@ -177,9 +180,8 @@ static inline ucal_iu32DivT ucal_iu32SubDiv(int32_t a, int32_t b, uint32_t d) {
 /// @param x operand
 /// @return x (mod 7)
 static inline int32_t ucal_i32Mod7(int32_t x) {
-    uint32_t xred = (UINT32_C(7) << 17)
-                  + (x & UINT32_C(0x7FFF)) + ucal_i32Asr(x, 15);
-    return (int32_t)(xred % 7);
+    uint32_t ux = (-(x < 0)) & UINT32_C(0x80000005);
+    return (int32_t)((ux + x) % 7u);
 }
 
 /// @brief mathematical/floor (mod 7) sum
@@ -190,7 +192,7 @@ static inline int32_t ucal_i32AddMod7(int32_t a, int32_t b) {
     uint32_t xred = (UINT32_C(7) << 17)
                   + (a & UINT32_C(0x7FFF)) + ucal_i32Asr(a, 15)
                   + (b & UINT32_C(0x7FFF)) + ucal_i32Asr(b, 15);
-    return (int32_t)(xred % 7);
+    return (int32_t)(xred % 7u);
 }
 
 /// @brief mathematical/floor (mod 7) difference
@@ -201,7 +203,7 @@ static inline int32_t ucal_i32SubMod7(int32_t a, int32_t b) {
     uint32_t xred = (UINT32_C(7) << 17)
                   + (a & UINT32_C(0x7FFF)) + ucal_i32Asr(a, 15)
                   - (b & UINT32_C(0x7FFF)) - ucal_i32Asr(b, 15);
-    return (int32_t)(xred % 7);
+    return (int32_t)(xred % 7u);
 }
 
 // -------------------------------------------------------------------------------------
