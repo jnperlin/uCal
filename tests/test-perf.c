@@ -115,6 +115,7 @@ static void test_libcPerf(void) {
 
 int main(int argc, char **argv)
 {
+    (void)(argc),(void)argv;
     UNITY_BEGIN();
     RUN_TEST(test_ucalPerf);
     RUN_TEST(test_libcPerf);

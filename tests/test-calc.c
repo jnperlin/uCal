@@ -282,8 +282,9 @@ static void test_gpsDate2(void) {
     TEST_ASSERT_EQUAL(exp, act);
 }
 
-int  main(int argc, char **argv)
+int main(int argc, char **argv)
 {
+    (void)argc,(void)argv;
     UNITY_BEGIN();
     RUN_TEST(test_asrONE);
     RUN_TEST(test_asrMAX);
