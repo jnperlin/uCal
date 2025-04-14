@@ -177,7 +177,9 @@ ucal_i64u32DivGM(
     uint64_t        ut = (uint64_t)u;
     uint32_t        ul, um, uh;
 
-    // get the 3 limbs for the division steps, avoiding excessive shifts
+    // Get the 3 limbs for the division steps, avoiding excessive shifts. Essentially
+    // a two's complement sign extension of the dividend to 3 limbs fused with the
+    // pre-division left shift.
     if (s &= 31) {
         uh = (uint32_t)(ut >> (64 - s)) | (m << s);
     } else {
@@ -186,7 +188,7 @@ ucal_i64u32DivGM(
     um = (uint32_t)(ut >> (32 - s));
     ul = (uint32_t)ut << s;
 
-    // do two chained divisions. We mix-in the XOR masking on-the-fly
+    // Do two chained divisions. We mix-in the XOR masking on-the-fly.
     xdiv = ucal_u32DivGM((uh ^ m), (um ^ m), d, v);
     um = xdiv.q ^ m;
     xdiv = ucal_u32DivGM(xdiv.r, (ul ^ m), d, v);

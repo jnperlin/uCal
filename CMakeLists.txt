@@ -108,6 +108,7 @@ target_sources(ucal PRIVATE
   src/isoweek.c
   src/ntpdate.c
   src/tsdecode.c
+  src/tzposix.c
 )
 # the next dependency triggers regeneration of calconst.h if python is present...
 if(Python_FOUND)
@@ -125,6 +126,10 @@ target_link_libraries(test-isow ucal unity)
 
 add_executable(test-adec tests/test-adec.c)
 target_link_libraries(test-adec ucal unity)
+
+add_executable(test-posix tests/test-tzposix.c)
+target_link_libraries(test-posix ucal unity)
+
 
 add_test(NAME ucal-test COMMAND test-calc)
 add_test(NAME ucal-perf COMMAND test-perf)

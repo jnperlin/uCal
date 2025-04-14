@@ -27,11 +27,16 @@ There's also some limited support to parse ASN.1 UTCTime and
 GeneralizedTime representations of time stamps (BER tag 23 and 24) as
 well as nanosecond decimal and 32-bit binary fractions.
 
+Minimalistic but functional support of POSIX time zone specs is provided:
+ + Parsing a POSIX TZ string
+ + get conversion info for conversion local time to system time
+ + get conversion info for conversion system time to local time
+ + aligned range slicing
 
 ## What it does not
 
 It doesn't deal with string formatting or parsing in general, and it
-does not deal with time zones.
+does not deal with time zones given in the Olson time zone database.
 
 
 ## Target constraints

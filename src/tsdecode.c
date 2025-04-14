@@ -24,6 +24,7 @@
 ///
 /// As this is a frequent topic in some domains, here are some helpers and building blocks.
 
+#include <stddef.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -35,6 +36,11 @@
 #include "ucal/gregorian.h"
 #include "ucal/calconst.h"
 
+// EOF is defined in stdio.h, but we don't want that one here...
+#ifndef EOF
+# define EOF (-1)
+#endif
+
 static const uint32_t pow10tab[9] = {
     100000000ul, 10000000ul,  1000000ul,
        100000ul,    10000ul,     1000ul,
@@ -43,6 +49,20 @@ static const uint32_t pow10tab[9] = {
 
 static const uint32_t pow10_9 = UINT32_C(1000000000);
 
+// peek into string, return next char with proper expansion or EOF
+static inline int
+str_peek(const char ** const head, const char *tail) {
+    return (*head != tail) ? (uint8_t)**head : EOF;
+}
+
+// return next char with proper expansion or EOF
+static inline int
+str_get(const char** const head, const char* tail)
+{
+    return (*head != tail) ? (uint8_t)*(*head)++ : EOF;
+}
+
+// quick number parsing loop
 static uint32_t
 _ucal_pnum(
     const char *head,
@@ -82,7 +102,7 @@ ucal_decNano_raw(
         end = str + strnlen(str, 128);
     }
 
-    while ((str != end) && isdigit(xch = (uint8_t)*str)) {
+    while (isdigit(xch = str_peek(&str, end))) {
         ++str;
         ++nch;
         xch -= '0';
@@ -141,7 +161,7 @@ ucal_decFrac_raw(
     bool         drop = false;
     int          xch;
 
-    // Initial setup & check if there's work to do at all...
+    // Initial setup of string, last-not-zero and (possibly) end-of-string
     lnz = str = *pstr;
     if (NULL == end) {
         end = str + strnlen(str, 128);
@@ -149,7 +169,7 @@ ucal_decFrac_raw(
 
     // Now find the end of the digit string, remembering the last non-zero digit
     // position as we go.
-    while ((str != end) && isdigit((xch = (uint8_t)*str))) {
+    while (isdigit((xch = str_peek(&str, end)))) {
         ++str;
         if (xch != '0') {
             lnz = str;
@@ -187,7 +207,7 @@ ucal_decFrac_raw(
         accu.q = 0;
     } else if ((accu.r & 1u) || drop) { // 0.5 tiebreak -- round up
         accu.q = (0 == ++accu.r);
-    } else {                            // 0.5 tiebreak -- no runding
+    } else {                            // 0.5 tiebreak -- no rounding
         accu.q = 0;
     }
     return accu;
@@ -222,7 +242,7 @@ _ucal_pdgroups(
     if ((end - str) > ndig) {
         end = str + ndig;
     }
-    while ((str != end) && isdigit(xch = (uint8_t)*str)) {
+    while (isdigit(xch = str_peek(&str, end))) {
         ++str;
         xch -= '0';
         if (cdi & 1) {
@@ -246,28 +266,26 @@ _ucal_ptzo(
     bool        tzs = false;
     uint8_t     tzo[2];
 
-    if (*pstr != end) {
-        switch (*(*pstr)++) {
-        case '-':   tzs = true;
-	            //FALLTHROUGH
-        case '+':   if ((4 != _ucal_pdgroups(tzo, 4, pstr, end)) || (tzo[0] > 23) || (tzo[1] > 59)) {
-                        return false;
-                    }
-                    if (tzs) {
-                        *into = -(int)tzo[0] * 60 - tzo[1];
-                    } else {
-                        *into = +(int)tzo[0] * 60 + tzo[1];
-                    }
-                    return true;
-
-        case 'Z':   *into = 0;
-                    return true;
-
-        default:    --(*pstr);
+    switch (str_get(pstr, end)) {
+    case '-':   tzs = true;
+            //FALLTHROUGH
+    case '+':   if ((4 != _ucal_pdgroups(tzo, 4, pstr, end)) || (tzo[0] > 23) || (tzo[1] > 59)) {
                     return false;
-        }
+                }
+                if (tzs) {
+                    *into = -(int)tzo[0] * 60 - tzo[1];
+                } else {
+                    *into = +(int)tzo[0] * 60 + tzo[1];
+                }
+                return true;
+
+    case 'Z':   *into = 0;
+                return true;
+
+    default:    --(*pstr);
+            // FALLTHROUGH
+    case EOF:   return false;
     }
-    return false;
 }
 
 // check if a date/time is well-formed
