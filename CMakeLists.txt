@@ -14,7 +14,7 @@
 # CMake top level file to build lib, tests and docs
 # ----------------------------------------------------------------------------------------------
 cmake_minimum_required(VERSION 3.5.0)
-project(µCal VERSION 0.1.0 LANGUAGES C)
+project(µCal VERSION 0.1.1 LANGUAGES C)
 
 include(CheckSymbolExists)
 include(CTest)
