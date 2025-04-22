@@ -49,10 +49,15 @@ typedef struct {
     const char* spTail; //!< tail / end of string
 } tziParseCtxT;
 
+static inline int
+c2i_(const char *cp) {
+    return (unsigned char)*cp;
+}
+
 static int
 tzi_PeekChar(tziParseCtxT const *ctx)
 {
-    return (ctx->spHead != ctx->spTail) ? (unsigned char)*ctx->spHead : EOF;
+    return (ctx->spHead != ctx->spTail) ? c2i_(ctx->spHead) : EOF;
 }
 
 static bool
@@ -61,7 +66,7 @@ tzi_ParseChar(tziParseCtxT *ctx, int xch)
     bool retv = false;
     if (ctx->spHead == ctx->spTail) {
         retv = (EOF == xch);
-    } else if ((unsigned char)*ctx->spHead == xch) {
+    } else if (c2i_(ctx->spHead) == xch) {
         retv = true;
         ++ctx->spHead;
     }
@@ -69,48 +74,63 @@ tzi_ParseChar(tziParseCtxT *ctx, int xch)
 }
 
 // Parse away a zone name, either in the CAPS-ONLY or the <quoted-string> format.
-// Will make a copy via 'strndup()', which has pros and cons, but keeping care
-// of the strings is easier than referencing string data owned by some other entity.
+// We store the zone name by value, which can be silently truncated.
+// !Note! The destination must be able to hold at least a terminating NUL char.
 static bool
-tzi_ParseName(tziParseCtxT *ctx, char ** into)
+tzi_ParseName(tziParseCtxT *ctx, char *into, unsigned size)
 {
-    int         xch  = tzi_PeekChar(ctx);
-    const char* head = ctx->spHead;
+    int         xch;
+    bool        retv;
+    unsigned    ccnt = 0;
+    const char *head = ctx->spHead;
 
-    if ('<' == xch) {
-        while (++ctx->spHead != ctx->spTail) {
-            xch = (unsigned char)*ctx->spHead;
-            if ('>' == xch) {
-                return NULL != (*into = strndup(head + 1, (++ctx->spHead - head - 2)));
-            } else if ('<' == xch) {
-                break;
+    // The string buffer should be set to zero already. We just make sure that
+    // we keep a trailing NUL byte...
+    --size;
+
+    if (head == ctx->spTail) {
+        retv = false;
+    } else  if ('<' == (xch = c2i_(head))) {
+        while ((++head != ctx->spTail) && ('>' != (xch = c2i_(head)))) {
+            if ('<' == xch) {
+                break;              // ...bummer...
+            } else if (ccnt < size) {
+                into[ccnt++ ]= (char)xch;// store one more byte ...
             }
         }
+        retv  = (head != ctx->spTail) && ('>' == c2i_(head));
+        head += (int)retv;
     } else if (isupper(xch)) {
+        // consume a sequence of 7-bit ASCII uppercase characters. Success if at least
+        // 3 of them have been stored.
         do {
-            ++ctx->spHead;
-        } while ((ctx->spHead != ctx->spTail) && isupper((unsigned char)*ctx->spHead));
-        if (3 <= (ctx->spHead - head)) {
-            return NULL != (*into = strndup(head, (ctx->spHead - head)));
-        }
+            if (ccnt < size) {
+                into[ccnt++] = (char)xch;
+            }
+        } while ((++head != ctx->spTail) && isupper((xch = c2i_(head))));
+        retv = (3 <= ccnt);
+    } else {
+        retv = false;
     }
-    return false;
+
+    if (retv) {
+        ctx->spHead = head;
+    }
+    return retv;
 }
 
-// Parse a number sign. 'defRes' is the deafult result, which means that a sign can be
-// optional without failing the parser.
+// Parse an optional number sign (+/-)
 static bool
-tzi_ParseSign(tziParseCtxT* ctx, bool* into, bool defRes)
+tzi_ParseOptSign(tziParseCtxT* ctx, bool* into)
 {
     bool nsig = false;
     switch (tzi_PeekChar(ctx)) {
         case '-':   nsig = true;
         case '+':   ++ctx->spHead;
-                    defRes = true;
         default:    break;
     }
     *into = nsig;
-    return defRes;
+    return true;
 }
 
 // Parse a pure unsigned number. Will stop once the current accumulation exceeds a value
@@ -130,17 +150,24 @@ tzi_ParseNum(tziParseCtxT *ctx, int* into)
     return ret;
 }
 
-// Parse time, either in a zone offset or a rulemtransition. The former *requires* an explicit
-// sign, the latter doesnt.  Also, offsets must be in +/- 1day, while transition times cover
-// a +/- 1 week range. That's to faciliate funny things like the Greenland rules, which switches
-// together with Denmark for the time being.
+// Parse time, either in a zone offset or a rule transition, with optional sign on hours.
+// Also, offsets must be in +/- 1day, while transition times cover +/- 1 week range.
+// That's to faciliate funny things like the Greenland rules, which switches  together
+// with Denmark for the time being.
+//
+// Note that while w e _read_ h[:m[:s]], seconds must evaluate to zero. Every time zone
+// in the computer age should be at least be on a minutes boundary (hours preferred),
+// and the zone offset should also be expressible in minutes.  Ideally, it should be
+// full hours, but there's always someone spoiling the game.  At least the 15 minute
+// interval boundary seems to be an accepted granularity these days.
+// Keep fingers crossed!
 static bool
 tzi_ParseTime(tziParseCtxT *ctx, int16_t* into, bool isRuleTime)
 {
     bool retv, nsig;
     int idx = 0, tmpHMS[3] = { 0, 0, 0 };
 
-    retv = tzi_ParseSign(ctx, &nsig, isRuleTime);
+    retv = tzi_ParseOptSign(ctx, &nsig);
     if (retv) do {
         retv = tzi_ParseNum(ctx, &tmpHMS[idx]);
     } while (retv && (++idx < 3) && tzi_ParseChar(ctx, ':'));
@@ -200,49 +227,49 @@ tzi_ParseRule(tziParseCtxT* ctx, tziPosixRuleT* into)
     return ret;
 }
 
-bool
+const char*
 tziFromPosixSpec(
     tziPosixZoneT *into,
     const char    *head,
     const char    *tail)
 {
-    bool retv = false;
+    // We keep the POSIX (U.S.) default rules as a verbatim copy here.
+    static tziPosixRuleT defRules[2] = {
+        // 2nd Sunday in March, 2:00am local is STD --> DST
+        { .rt_month =  3, .rt_mdmw = 2, .rt_wday = 7, .rt_ttloc = 120 },
+        // 1st Sunday in November, 2:00am local is DST --> STD
+        { .rt_month = 11, .rt_mdmw = 1, .rt_wday = 7, .rt_ttloc = 120 }
+    };
+
+    bool        retv = false;
+    tziParseCtxT ctx = { NULL, NULL };
 
     if ((NULL != into) && (NULL != head)) {
-        tziParseCtxT ctx = {
-            .spHead = head,
-            .spTail = (tail ? tail : head + strlen(head))
-        };
-        retv = tzi_ParseName(&ctx, &into->stdName)
-            && tzi_ParseTime(&ctx, &into->stdOffs, false);
-        if (retv && tzi_ParseName(&ctx, &into->dstName)) {
+        ctx.spHead = head;
+        ctx.spTail = tail ? tail : (head + strlen(head));
+
+        memset(into, 0, sizeof(tziPosixZoneT));
+
+        retv = tzi_ParseName(&ctx, into->stdName, sizeof(into->stdName)) &&
+               tzi_ParseTime(&ctx, &into->stdOffs, false);
+        if (retv && tzi_ParseName(&ctx, into->dstName, sizeof(into->dstName))) {
             // We have two zones here. We initialize the transition rules to the
             // POSIX / US default -- it might be fully or partially overwritten
             // quite soon below. Since using the zone info after a parsing failure
             // is calling UB anyway, it doesn't matter if the if we preset before
             // parsing or trying to fit in missing parts later.
-            into->dstRule.rt_month = 3;     // 2nd Sunday im March, 2am is STD --> DST
-            into->dstRule.rt_mdmw  = 2;
-            into->dstRule.rt_wday  = 7;
-            into->dstRule.rt_ttloc = 120;
-
-            into->dstRule.rt_month = 11;    // 1st Sunday in November, 2am is DST --> STD
-            into->dstRule.rt_mdmw  = 1;
-            into->dstRule.rt_wday  = 7;
-            into->dstRule.rt_ttloc = 120;
+            into->dstRule = defRules[0];
+            into->stdRule = defRules[1];
 
             // The offset for the DST zone is optional: If not given, DST is 1h ahead of
-            // the zones standard time.
-            switch (tzi_PeekChar(&ctx)) {
-            case '+':
-            case '-':
-                retv = tzi_ParseTime(&ctx, &into->dstOffs, false);
-                break;
-
-            default:
+            // the zones standard time.  We save the parse position and try to parse an
+            // offset; if this fails, we use the default and restore the scan position.
+            head = ctx.spHead;
+            if (!tzi_ParseTime(&ctx, &into->dstOffs, false)) {
+                ctx.spHead = head;
                 into->dstOffs = into->stdOffs - 60;
-                break;
             }
+
             // For the transition rules, either none or two must be given.
             if (retv && ',' == tzi_PeekChar(&ctx)) {
                 retv = tzi_ParseChar(&ctx, ',')
@@ -250,6 +277,7 @@ tziFromPosixSpec(
                     && tzi_ParseChar(&ctx, ',')
                     && tzi_ParseRule(&ctx, &into->stdRule);
             }
+
             // There's a ...special... thing like a all-year DST zone.  Which is something
             // only politicans and other dorks can come up with.  Oh well, we deal with it...
             if (  retv
@@ -261,7 +289,7 @@ tziFromPosixSpec(
             }
         }
     }
-    return retv;
+    return retv ? ctx.spHead : NULL;
 }
 
 #define EPOCH_YEAR 1970
@@ -417,18 +445,27 @@ tziGetInfoLocal2Utc(
         } else {
             int64_t tmp = ttStdA; ttStdA = ttStdB; ttStdB = tmp;
         }
+
+        // The whole logic becomes slightly less convoluted when checking the special
+        // cases first.  The whole procedure has some symmeries, but one detail is
+        // asymmetric by design: The hour A/B designator will only be set when the
+        // local time steps back on the transition.  One _could_ define these ranges
+        // (which are only 1h when the DST<->STD diff is one hour!) as the last/first
+        // step-sized interval before/after the discontinuiy.  But that would be rather
+        // counter-intuitive, considering the way these flags are normally used, and so
+        // we only set it when the zone transition causes a backstep of wallclock time!
         if ((tsfrom >= ttDstA) && (tsfrom < ttDstB)) {
             // plunged into STD --> DST discontinuity
             switch (hint) {
             case tziCvtHint_STD:
             case tziCvtHint_HrA:
                 into->isDst = 0;
-                into->isHrA = 1;
+                into->isHrA = (tzi->dstOffs > tzi->stdOffs);
                 break;
             case tziCvtHint_DST:
             case tziCvtHint_HrB:
                 into->isDst = 1;
-                into->isHrB = 1;
+                into->isHrB = (tzi->dstOffs > tzi->stdOffs);
                 break;
             default:
                 return false;
@@ -439,12 +476,12 @@ tziGetInfoLocal2Utc(
             case tziCvtHint_STD:
             case tziCvtHint_HrB:
                 into->isDst = 0;
-                into->isHrB = 1;
+                into->isHrB = (tzi->dstOffs < tzi->stdOffs);
                 break;
             case tziCvtHint_DST:
             case tziCvtHint_HrA:
                 into->isDst = 1;
-                into->isHrA = 1;
+                into->isHrA = (tzi->dstOffs < tzi->stdOffs);
                 break;
             default:
                 return false;

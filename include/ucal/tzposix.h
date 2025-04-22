@@ -46,8 +46,8 @@ typedef struct {
 /// or a single static zone.
 typedef struct tziPosixZone_S {
     //-*-  zone names first
-    char           *stdName;    ///< standard zone name/abbreviation
-    char           *dstName;    ///< name/abbreviation of associated DST zone
+    char            stdName[12];///< standard zone name/abbreviation
+    char            dstName[12];///< name/abbreviation of associated DST zone
     // -*- zone offsets next
     int16_t         stdOffs;    ///< offset (STD - UTC) in minutes; negative if east of Greenwich!
     int16_t         dstOffs;    ///< offset (DST - UTC) in minutes
@@ -96,22 +96,31 @@ typedef enum tziCvtHints_E {
     tziCvtHint_HrB,     ///< local time to UTC, resolve to zone after transition
 } tziCvtHintT;
 
-
 /// @brief parse POSIX-conforming zone spec
 ///
 /// Given a POSIX time zone string (with GNU extensions), parse this into the binary
 /// representation used for conversions.
 ///
+/// @note The function may succeed even without consuming the whole input string: Some
+/// of the components are optional, so parsing might simply stop at a position where
+/// an optional component might start but cannot be parsed.  Just checking the result
+/// against @c NULL is insufficient to test if all input is consumed or not.
+///
 /// @param into     time zone info to fill
 /// @param head     head position of string to parse
 /// @param tail     tail position; can be @c NULL to stop at @c NUL byte
-/// @return         @c true on success, @c false otherwise
-extern bool tziFromPosixSpec(tziPosixZoneT *into, const char *head, const char *tail);
+/// @return         parse end position on success, @c NULL on error
+extern const char* tziFromPosixSpec(tziPosixZoneT *into, const char *head, const char *tail);
 
 /// @brief get information for a conversion from local time to UTC time scale
+///
 /// Get the zone info to convert a local time to UTC time.  This function will fail
 /// if the time given is in the spring/autumn discontinuity range and no proper hint
-/// is provided.
+/// is provided.  While most people consider only the back-step a problem, the other
+/// direction has a symmetric issue: A local time stamp in the critical/omitted
+/// transition period can also be before or after the transition time in UTC.
+/// Sane data shouldn't contain time stamps in the omitted range, but reality bites
+/// in unexpected places.
 ///
 /// @note Giving a fixed hint (like always using STD time) will prevent the function
 ///       from failing.  It should be noted that the result is possibly not quite what
@@ -162,7 +171,8 @@ extern bool tziGetInfoUtc2Local(tziConvInfoT *into, tziConvCtxT *ctx, int64_t ts
 /// @param period   time period to align
 /// @param phi      phase shift (probably zero, see note)
 /// @return
-extern bool tziAlignedLocalRange(int64_t tlohi[2], tziConvInfoT *cvInfo, tziConvCtxT *ctx, int64_t const tsfrom, int32_t period, int32_t phi);
+extern bool tziAlignedLocalRange(int64_t tlohi[2], tziConvInfoT *cvInfo, tziConvCtxT *ctx,
+                                 int64_t const tsfrom, int32_t period, int32_t phi);
 
 CDECL_END
 #endif /*TZPOSIX_H_D2078C60_0B6B_439F_B110_087913F54042*/
