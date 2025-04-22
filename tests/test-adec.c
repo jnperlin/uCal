@@ -81,7 +81,8 @@ static void test_GenTm(void) {
     TEST_ASSERT_TRUE(ucal_decASN1GenTime24(&ts, &str, NULL));
 }
 
-unsigned double_up(
+static unsigned
+double_up(
     uint8_t *dbuf,
     unsigned ndig,
     uint8_t  base,
@@ -98,7 +99,8 @@ unsigned double_up(
     return (flag & 1u);
 }
 
-unsigned double_dn(
+static unsigned
+double_dn(
     uint8_t *dbuf,
     unsigned ndig,
     uint8_t  base,
@@ -116,7 +118,8 @@ unsigned double_dn(
     return (flag & 1u);
 }
 
-unsigned rabble_up(
+static unsigned
+rabble_up(
     uint8_t *dbuf,
     unsigned ndig,
     uint8_t  base,
@@ -133,7 +136,8 @@ unsigned rabble_up(
     return (flag & 1u);
 }
 
-unsigned rabble_dn(
+static unsigned
+rabble_dn(
     uint8_t *dbuf,
     unsigned ndig,
     uint8_t  base,
@@ -155,7 +159,14 @@ unsigned rabble_dn(
 
 int main(int argc, char **argv)
 {
-    (void)(argc,argv);
+    (void)argc;
+    (void)argv;
+
+    (void)rabble_dn;
+    (void)rabble_up;
+    (void)double_dn;
+    (void)double_up;
+
     UNITY_BEGIN();
     RUN_TEST(test_pfrac);
     RUN_TEST(test_UtcTm);
