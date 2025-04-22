@@ -182,8 +182,7 @@ def lin_iter(lo:float, hi:float, limit:int) -> Iterable[Tuple[int,int]]:
 def m2d(seq, maxden, deep_slope=True):
     "calculate linear interpolation for month to days"
 
-    # get the points for interpolation by accumulating the month lengths
-    #pairs = list(enumerate(itertools.accumulate(monlens, operator.add, initial=0)))
+    # make sure 'seq' can be used several times -- a simple generator cannot restart.
     pairs = list(seq)
 
     # get the slope boundaries is not too difficult, either:
