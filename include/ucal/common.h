@@ -85,43 +85,39 @@ static inline uint32_t ucal_u64hi(uint64_t v) {
 // We need arithmetic shift right on negative signed integers.  Some compilers do,
 // others don't.  We have to work around this.
 // -------------------------------------------------------------------------------------
-#ifndef MACHINE_ASR
-# if (-1 >> 1) == -1
-#  define MACHINE_ASR 1
-# else
-#  define MACHINE_ASR 0
-# endif
-#endif
+enum TargetProps {
+    MACHINE_ASR = (-1 == (-1 >> 1))
+};
 
-#if MACHINE_ASR
 static inline int32_t ucal_i32Asr(int32_t v, unsigned s) {
-    return (s < 32) ? (v >> s) : -(v < 0);
-}
-static inline int64_t ucal_i64Asr(int64_t v, unsigned s) {
-    return (s < 64) ? (v >> s) : -(v < 0);
-}
-#else
-static inline int32_t ucal_i32Asr(int32_t v, unsigned s) {
-    if (s < 32) {
-        uint32_t m = -(v < 0);
-        uint32_t u = m ^ ((m ^ v) >> s);
-        v = ucal_u32_i32(u);
+    if (MACHINE_ASR) {
+        v = (s < 32) ? (v >> s) : -(v < 0);
     } else {
-        v = -(v < 0);
+        if (s < 32) {
+            uint32_t m = -(v < 0);
+            uint32_t u = m ^ ((m ^ v) >> s);
+            v = ucal_u32_i32(u);
+        } else {
+            v = -(v < 0);
+        }
     }
     return v;
 }
+
 static inline int64_t ucal_i64Asr(int64_t v, unsigned s) {
-    if (s < 64) {
-        uint64_t m = -(v < 0);
-        uint64_t u = m ^ ((m ^ v) >> s);
-        v = ucal_u64_i64(u);
+    if (MACHINE_ASR) {
+        v = (s < 64) ? (v >> s) : -(v < 0);
     } else {
-      v = -(v < 0);
+        if (s < 64) {
+            uint64_t m = -(v < 0);
+            uint64_t u = m ^ ((m ^ v) >> s);
+            v = ucal_u64_i64(u);
+        } else {
+            v = -(v < 0);
+        }
     }
     return v;
 }
-#endif /*MACHINE_ASR*/
 
 // -------------------------------------------------------------------------------------
 // We have some tuple-like types, mainly to represent the result of split (division)
@@ -174,7 +170,7 @@ static inline ucal_iu32DivT ucal_iu32SubDiv(int32_t a, int32_t b, uint32_t d) {
 }
 
 // -------------------------------------------------------------------------------------
-// some excercises (mod 7)
+// some exercises (mod 7)
 
 /// @brief mathematical/floor (mod 7) op
 /// @param x operand
