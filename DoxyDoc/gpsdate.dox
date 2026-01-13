@@ -69,7 +69,7 @@ This is plugging information from thin air -- every choice has pros and cons.
    sync PLL-like.  Of course, if you're too far off, the lock will happen to the wrong era.
 
  + Make it a configurable. The most sure-fire way, but an option that needs care every 10
-   or 20 years might need some active monitoring to remain someone that it's time to define
+   or 20 years might need some active monitoring to remind someone that it's time to define
    a new base. (Pun not intended)
 
 IMHO, using a build stamp as fallback and something configurable (environment, configuration file,
@@ -80,7 +80,7 @@ there's only one location where adjustment is necessary.
 OTOH, for something running on a full-fledged system, with battery-backed RTC (BIOS clock or such) and
 an OS, mapping around the current system time is a good option.
 
-Choose wisely
+Choose wisely.
 
 */
 /* -*- that's all folks -*- */

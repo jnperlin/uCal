@@ -170,7 +170,7 @@ evaluation of constant expressions, and _this_ evaluation must yield the same re
 target would yield when doing the calculations at runtime!
 
 So a simple check with the preprocessor is sufficient: Only on machines with arithmetic
-right shift ` -1 == (-1 >> 1) ` can be true. (It doesn't matter if the silicone does it itself
+right shift ` -1 == (-1 >> 1) ` can be true. (It doesn't matter if the silicon does it itself
 or if the compiler emits code to emulate this -- from high level the right shift _is_ arithmetic!)
 
 If the shift is logic, we can use a mask/shift/mask sequence that emulates arithmetic shift on _any_

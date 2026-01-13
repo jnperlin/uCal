@@ -19,7 +19,7 @@
 /// decoding special time stamp formats
 ///
 /// Parsing ASN.1 time stamps with @c strptime() can be astonishing tricky, not to mention that
-/// it can become a performance issue.  Likwise is parsing a decimal fraction to a binary fraction
+/// it can become a performance issue.  Likewise is parsing a decimal fraction to a binary fraction
 /// and (to a lesser degree) parsing nanoseconds from a fractional string.
 ///
 /// As this is a frequent topic in some domains, here are some helpers and building blocks.
@@ -151,7 +151,7 @@ ucal_decFrac_raw(
     const char **pstr,
     const char  *end )
 {
-    // normalized divider and inverse for Granlund-Moeller division step by 10⁸
+    // normalized divider and inverse for Granlund/Moeller division step by 10⁸
     static const uint32_t D = UINT32_C(0xbebc2000); // 3200000000;
     static const uint32_t V = UINT32_C(0x5798ee23);
 

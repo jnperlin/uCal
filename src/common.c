@@ -116,9 +116,9 @@ ucal_u32DivGM(
     uint32_t q1, q0;
     // For the double-width product/sum, a 64bit accu is used.
     {
-      uint64_t accu = (uint64_t)u1 * (uint64_t)v + u0;
-      q0 = (uint32_t)accu;
-      q1 = (uint32_t)(accu >> 32) + u1 + 1;
+        uint64_t accu = (uint64_t)u1 * (uint64_t)v + u0;
+        q0 = (uint32_t)accu;
+        q1 = (uint32_t)(accu >> 32) + u1 + 1;
     }
     u0 -= q1 * d;               // u0 becomes the remainder (orig. value no longer needed)
     if (u0 > q0) {              // The 'unpredictable' condition

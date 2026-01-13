@@ -167,7 +167,7 @@ Sometimes, only a 2-digit year is provided.  Obviously, expanding this to a full
 the epoch (Christian era, typically) needs some additional information.  One simple solution
 is to define a range of 100 years and map the two-digit year into that range.  This is a viable
 solution for e.g. truncated GPS time stamps, where a 2-digit year can be mapped into the range
-[198..2079].  Another approach is to get the expansion base from the current time, or from some
+[1980..2079].  Another approach is to get the expansion base from the current time, or from some
 other external means.
 
 
@@ -185,7 +185,7 @@ that information, like the German DCF-77 signal) a different approach is possibl
    combination of a date with a 2-digit year and a day-of-week can be mapped into an arbitrary
    700-year cycle.
 
-For the Julian calendar, this is mostly an excercise.  For the Gregorian calendar, it can be
+For the Julian calendar, this is mostly an exercise.  For the Gregorian calendar, it can be
 used to recover the full date information over 400 year range and/or validate the input data:
 if the expansion fails, flagging an invalid input, some input data is not to be trusted.  Even
 if the expansion succeeds, the resulting date can be checked against further constraints, like

@@ -100,7 +100,7 @@ ucal_GpsMapRaw2(
 {
     // Here we directly align the GPS cycle in seconds to the UNIX epoch and add the cycle
     // difference To the base time.  While this is conceptually somewhat easier than the day-based
-    // function, implementing this _really_ efficient is a bit of a chore, as it requires divisons
+    // function, implementing this _really_ efficient is a bit of a chore, as it requires divisions
     // on 'time_t'...
     //
     // We avoid that issue by calculating the cycle difference in int64_t and do a proper floor

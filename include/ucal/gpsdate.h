@@ -70,7 +70,7 @@ extern int32_t ucal_GpsRemapRdn(int32_t rdn, int32_t baseRdn);
 /// * If the year is >= 1980, it is taken literally.
 /// * Else, if the day-of-week is known, use inverse Zeller's congruence to construct a year in the
 ///   range [1980,2379]
-/// * Else, or if Zeller's congruence failed, map the yaer (mod 100) into the range[1980,279]
+/// * Else, or if Zeller's congruence failed, map the year (mod 100) into the range[1980,2079]
 ///
 /// @param y        full or truncated calendar year
 /// @param m        calendar month
