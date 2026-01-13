@@ -63,7 +63,7 @@ typedef struct tziPosixZone_S {
 /// fast as they might b, for the typical use case without much extra overhead when
 /// the time stamps jump around wildly.
 ///
-/// @note The time stamps are only calulated if the associated time zone has
+/// @note The time stamps are only calculated if the associated time zone has
 /// transitions indeed.  For fixed / single zones they will never be looked at.
 ///
 /// All time stamps are seconds since the UNIX epoch, that is 1970-01-01-T00:00:00Z.
@@ -85,7 +85,7 @@ typedef struct tziConvInfo_S {
 /// @brief conversion hints
 ///
 /// Hints how to get the conversion info. The conversion of UTC to local time cannot fail
-/// (apart from overflow issues), but a time stamp in local time can be ambigeous with the
+/// (apart from overflow issues), but a time stamp in local time can be ambiguous with the
 /// spring gap and autumn overlap. So apart from the 'default' modes, we have some hints
 /// we can give.
 typedef enum tziCvtHints_E {
@@ -129,11 +129,29 @@ extern const char* tziFromPosixSpec(tziPosixZoneT *into, const char *head, const
 ///       where the clock steps backward.
 ///
 /// @param into     where to store the results
-/// @param ctx      connversion context to use/update
+/// @param ctx      conversion context to use/update
 /// @param tsfrom   time stamp in UNIX scale
 /// @param hint     how to resolve ambiguities
 /// @return         @c true on success, @c false otherwise
 extern bool tziGetInfoLocal2Utc(tziConvInfoT *into, tziConvCtxT *ctx, int64_t tsfrom, tziCvtHintT hint);
+
+/// @brief get information for a conversion from local time to UTC time scale
+///
+/// This uses a different strategy: It gives the zone that yields the time closest to the pivot
+/// still smaller than the pivot. (Again, the tie break is only used where a time stamp @e is
+/// ambiguous!) This strategy works well with producer and consumer of time stamps at least
+/// roughly in sync and update delays smaller than 0.5h.
+///
+/// @note Communication / update failures during the critical intervals can flip results to
+///       to the wrong side when the wallclock steps backward.
+/// @note This function does @e not set the HourA/B indicators.
+///
+/// @param into     where to store the results
+/// @param ctx      conversion context to use/update
+/// @param tsfrom   time stamp in UNIX scale
+/// @param pivot    pivot time for disambiguation
+/// @return         @c true on success, @c false otherwise
+extern bool tziGetInfoLocal2Utc_alt(tziConvInfoT *into, tziConvCtxT *ctx, int64_t tsfrom, int64_t pivot);
 
 /// @brief get information for a conversion from UTC time to local time scale
 /// Get the zone info to convert a UTC time stamp to local time.  While formally returning
@@ -141,7 +159,7 @@ extern bool tziGetInfoLocal2Utc(tziConvInfoT *into, tziConvCtxT *ctx, int64_t ts
 /// the arguments...
 ///
 /// @param into     where to store the results
-/// @param ctx      connversion context to use/update
+/// @param ctx      conversion context to use/update
 /// @param tsfrom   time stamp in UNIX scale
 /// @return         @c true on success, @c false otherwise
 extern bool tziGetInfoUtc2Local(tziConvInfoT *into, tziConvCtxT *ctx, int64_t tsfrom);
@@ -149,16 +167,16 @@ extern bool tziGetInfoUtc2Local(tziConvInfoT *into, tziConvCtxT *ctx, int64_t ts
 /// @brief align a period around a time stamp to local time
 ///
 /// Get an aligned period of give length in @e local time that contains a given
-/// time stamp. This is a typical problem for e.g Power Quality measuremt
+/// time stamp. This is a typical problem for e.g Power Quality measurement
 /// equipment, where aggregation periods are 10 or 30 minutes, 1, 2, 6 or 12
 /// hours or a day. The periods longer than one hour are likely sensitive to DST
 /// transitions.  For some applications (notably those generating PQDIFF data)
-/// all samples in a set must be from the same local time zone,
+/// all samples in a set must be from the same local time zone;
 /// a sample interval has to start or end at the respective transition, if such
 /// falls into the sample range.
 ///
-/// @note Whether DST/STD transitions hurt or not depends on few GCD properies of the DST/STD
-///    differnce, the phase shift and the period. For a @e sane time zone, with 1h difference
+/// @note Whether DST/STD transitions hurt or not depends on few GCD properties of the DST/STD
+///    difference, the phase shift and the period. For a @e sane time zone, with 1h difference
 ///    and switching on a full hour, 1h is the threshold where madness starts to take its toll.
 ///
 /// @note The phase shift 'phi' is zero for most applications.  It may be needed to align cycles

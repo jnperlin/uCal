@@ -133,29 +133,35 @@ tzi_ParseOptSign(tziParseCtxT* ctx, bool* into)
     return true;
 }
 
-// Parse a pure unsigned number. Will stop once the current accumulation exceeds a value
-// of 100 (so 999 is the max number we will parse) or (of course) when the cursor points
-// to a non-digit symbol. Fails if no digits have been converted at all.
+// Parse a pure unsigned number. Will aggregate numbers until there are no more digits
+// or if merging the current digit would overflow the MAX limit.  Success needs
+// vmin <= cvt-res <= vmax AND at least one digit had to be converted. IOW, this fails
+// if no digits have been converted at all.
+// !Note! This will consume an infinite number of leading zeros.
 static bool
-tzi_ParseNum(tziParseCtxT *ctx, int* into)
+tzi_ParseNumBound(tziParseCtxT *ctx, int* into, int vmin, int vmax)
 {
-    bool ret = false;
+    bool cvt = false;
     int  tmp = 0, xch;
-    while ((100 > tmp) && isdigit((xch = tzi_PeekChar(ctx)))) {
+    while (isdigit((xch = tzi_PeekChar(ctx)))) {
+        cvt = true;
         tmp = 10 * tmp + (xch - '0');
+        if (tmp > vmax) {
+            tmp /= 10;
+            break;
+        }
         ++ctx->spHead;
-        ret = true;
     }
     *into = tmp;
-    return ret;
+    return cvt && (tmp >= vmin) && (tmp <= vmax);
 }
 
 // Parse time, either in a zone offset or a rule transition, with optional sign on hours.
 // Also, offsets must be in +/- 1day, while transition times cover +/- 1 week range.
-// That's to faciliate funny things like the Greenland rules, which switches  together
+// That's to deal with funny things like the Greenland rules, which switches together
 // with Denmark for the time being.
 //
-// Note that while w e _read_ h[:m[:s]], seconds must evaluate to zero. Every time zone
+// Note that while we _read_ h[:m[:s]], seconds must evaluate to zero. Every time zone
 // in the computer age should be at least be on a minutes boundary (hours preferred),
 // and the zone offset should also be expressible in minutes.  Ideally, it should be
 // full hours, but there's always someone spoiling the game.  At least the 15 minute
@@ -164,16 +170,15 @@ tzi_ParseNum(tziParseCtxT *ctx, int* into)
 static bool
 tzi_ParseTime(tziParseCtxT *ctx, int16_t* into, bool isRuleTime)
 {
+    static const uint8_t limits[2][3] = { { 23, 59, 0}, { 168, 59, 0} };
+
     bool retv, nsig;
     int idx = 0, tmpHMS[3] = { 0, 0, 0 };
 
     retv = tzi_ParseOptSign(ctx, &nsig);
     if (retv) do {
-        retv = tzi_ParseNum(ctx, &tmpHMS[idx]);
+        retv = tzi_ParseNumBound(ctx, &tmpHMS[idx], 0, limits[isRuleTime][idx]);
     } while (retv && (++idx < 3) && tzi_ParseChar(ctx, ':'));
-    if (retv) {
-        retv = ((isRuleTime ? 168 : 24) > tmpHMS[0]) && (60 > tmpHMS[1]) && (0 == tmpHMS[2]);
-    }
     tmpHMS[2] = retv ? (60 * tmpHMS[0] + tmpHMS[1]) : 0;
     *into = nsig ? -tmpHMS[2] : tmpHMS[2];
     return retv;
@@ -188,13 +193,9 @@ tzi_ParseRule(tziParseCtxT* ctx, tziPosixRuleT* into)
     int xch = tzi_PeekChar(ctx);
     if ('M' == xch) {
         ++ctx->spHead;
-        ret = tzi_ParseNum(ctx, &tmpMDW[0]) && tzi_ParseChar(ctx, '.') &&
-              tzi_ParseNum(ctx, &tmpMDW[1]) && tzi_ParseChar(ctx, '.') &&
-              tzi_ParseNum(ctx, &tmpMDW[2]);
-        ret = ret
-           && (1 <= tmpMDW[0]) && (12 >= tmpMDW[0])
-           && (1 <= tmpMDW[1]) && ( 5 >= tmpMDW[1])
-           && (7 >= tmpMDW[2]);
+        ret = tzi_ParseNumBound(ctx, &tmpMDW[0], 1, 12) && tzi_ParseChar(ctx, '.') &&
+              tzi_ParseNumBound(ctx, &tmpMDW[1], 1,  5) && tzi_ParseChar(ctx, '.') &&
+              tzi_ParseNumBound(ctx, &tmpMDW[2], 0,  6);
         if (ret) {
             into->rt_month = tmpMDW[0];
             into->rt_mdmw  = tmpMDW[1];
@@ -202,19 +203,19 @@ tzi_ParseRule(tziParseCtxT* ctx, tziPosixRuleT* into)
         }
     } else if ('J' == xch) {
         ++ctx->spHead;
-        if (isdigit(tzi_PeekChar(ctx)) && tzi_ParseNum(ctx, &tmpMDW[1]) && (1 <= tmpMDW[1]) && (365 >= tmpMDW[1])) {
+        ret = tzi_ParseNumBound(ctx, &tmpMDW[1], 1, 365);
+        if (ret) {
             ucal_iu32DivT yd = ucal_DaysToMonth(tmpMDW[1] - 1, false);
             into->rt_month = yd.q + 1;
             into->rt_mdmw  = yd.r + 1;
             into->rt_wday  = 0;
-            ret = true;
         }
     } else if (isdigit(xch)) {
-        if (isdigit(tzi_PeekChar(ctx)) && tzi_ParseNum(ctx, &tmpMDW[1]) && (365 >= tmpMDW[1])) {
+        ret = tzi_ParseNumBound(ctx, &tmpMDW[1], 0, 365);
+        if (ret) {
             into->rt_month = 1;
             into->rt_mdmw  = tmpMDW[1] + 1;
             into->rt_wday  = 0;
-            ret = true;
         }
     }
     if (ret && tzi_ParseChar(ctx, '/')) {
@@ -279,7 +280,7 @@ tziFromPosixSpec(
             }
 
             // There's a ...special... thing like a all-year DST zone.  Which is something
-            // only politicans and other dorks can come up with.  Oh well, we deal with it...
+            // only politicians and other dorks can come up with.  Oh well, we deal with it...
             if (  retv
                && (1 == into->dstRule.rt_month)
                && (1 == into->dstRule.rt_mdmw)
@@ -294,11 +295,23 @@ tziFromPosixSpec(
 
 #define EPOCH_YEAR 1970
 
+// for converting local time --> UTC we need both transitions in both zones, ordered.
+// This structure helps us to refactor common code for the two tie break strategies
+// we support for now:
+typedef struct {
+    int64_t ttDstA, ttDstB, ttStdA, ttStdB;
+} tzi_LocalTTT;
+
 static inline int int_min(int a, int b) {
     return (a <= b) ? a : b;
 }
 static inline int int_max(int a, int b) {
     return (a <= b) ? b : a;
+}
+
+static uint64_t
+absDiff64_(int64_t a, int64_t b) {
+    return (a >= b) ? ((uint64_t)a - (uint64_t)b) : ((uint64_t)b - (uint64_t)a);
 }
 
 static int64_t
@@ -447,11 +460,11 @@ tziGetInfoLocal2Utc(
         }
 
         // The whole logic becomes slightly less convoluted when checking the special
-        // cases first.  The whole procedure has some symmeries, but one detail is
+        // cases first.  The whole procedure has some symmetries, but one detail is
         // asymmetric by design: The hour A/B designator will only be set when the
         // local time steps back on the transition.  One _could_ define these ranges
         // (which are only 1h when the DST<->STD diff is one hour!) as the last/first
-        // step-sized interval before/after the discontinuiy.  But that would be rather
+        // step-sized interval before/after the discontinuity.  But that would be rather
         // counter-intuitive, considering the way these flags are normally used, and so
         // we only set it when the zone transition causes a backstep of wallclock time!
         if ((tsfrom >= ttDstA) && (tsfrom < ttDstB)) {
@@ -502,6 +515,73 @@ tziGetInfoLocal2Utc(
 }
 
 bool
+tziGetInfoLocal2Utc_alt(
+    tziConvInfoT *into  ,
+    tziConvCtxT  *ctx   ,
+    int64_t const tsfrom,
+    int64_t const pivot )
+{
+    if ((NULL == into) || (NULL == ctx)) {
+        errno = EINVAL;
+        return false;
+    }
+    tziPosixZoneT const* const tzi = ctx->pTZI;
+
+    memset(into, 0, sizeof(*into));
+
+    if (0 == tzi->dstRule.rt_month) {
+        // no rule for transition to DST --> all-year STD time
+        into->offs = + tzi->stdOffs * 60;
+        into->isDst = 0;
+    } else if (0 == tzi->stdRule.rt_month) {
+        // no rule for transition to STD --> all-year DST time
+        into->offs = + tzi->dstOffs * 60;
+        into->isDst = 1;
+    } else if (tzi_CtxUpdate(ctx, (tsfrom + tzi->stdOffs * 60))) {
+        // zone with real STD<-->DST transitions
+
+        // we need both transition times in both zones to detect the pitfalls!
+        int64_t ttDstA = ctx->ttDST - tzi->stdOffs * 60;
+        int64_t ttDstB = ctx->ttDST - tzi->dstOffs * 60;
+        int64_t ttStdA = ctx->ttSTD - tzi->dstOffs * 60;
+        int64_t ttStdB = ctx->ttSTD - tzi->stdOffs * 60;
+        // order the critical ranges
+        if (ttDstA > ttDstB) {
+            int64_t tmp = ttDstA; ttDstA = ttDstB; ttDstB = tmp;
+        } else {
+            int64_t tmp = ttStdA; ttStdA = ttStdB; ttStdB = tmp;
+        }
+
+        // check for critical ranges first
+        if (  ((tsfrom >= ttDstA) && (tsfrom < ttDstB))
+           || ((tsfrom >= ttStdA) && (tsfrom < ttStdB)))
+        {
+            // plunged into DST <--> STD discontinuity
+            int64_t s1 = tsfrom - tzi->stdOffs * 60;
+            int64_t s2 = tsfrom - tzi->dstOffs * 60;
+            if ((s1 <= pivot) && (s2 > pivot)) {
+                into->isDst = 0;
+            } else if ((s2 <= pivot) && (s1 > pivot)) {
+                into->isDst = 1;
+            } else {
+                into->isDst = (absDiff64_(pivot, s2) < absDiff64_(pivot, s1));
+            }
+        } else if (ctx->ttDST < ctx->ttSTD) {
+            // northern hemisphere: spring is in March
+            into->isDst = (tsfrom >= ttDstB) && (tsfrom < ttStdA);
+        } else {
+            // southern hemisphere: spring is in September
+            into->isDst = (tsfrom >= ttDstB) || (tsfrom < ttStdA);
+        }
+        into->offs = (into->isDst ? tzi->dstOffs : tzi->stdOffs) * 60;
+    } else {
+        return false;
+    }
+
+    return true;
+}
+
+bool
 tziAlignedLocalRange(
     int64_t       tlohi[2],
     tziConvInfoT *cvInfo  ,
@@ -519,7 +599,7 @@ tziAlignedLocalRange(
         // calculating the cycle position in LOCAL time
         int32_t csoff = (tsfrom + cvInfo->offs + phi) % period;
         if (csoff < 0) {
-            csoff += period;            
+            csoff += period;
         }
         // apply the cycle alignment to UTC time
         tlohi[0] = tsfrom - csoff;
