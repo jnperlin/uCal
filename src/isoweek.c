@@ -42,7 +42,7 @@
 // rounded to the nearest integer, as a starting point.
 
 static inline unsigned ccofs_y2w(unsigned cc) {
-  #if 1 || !defined(__thumb__)
+  #if !defined(__thumb__)
     cc = (1u - cc) & 3;
     cc = (cc << 1) - (cc >> 1);
     return 157u + cc * 146u;
@@ -52,7 +52,7 @@ static inline unsigned ccofs_y2w(unsigned cc) {
 }
 
 static inline unsigned ccofs_w2y(unsigned cc) {
-  #if 1 || !defined(__thumb__)
+  #if !defined(__thumb__)
     cc = (2u + cc) & 3u;
     cc = (cc << 1) - (cc >> 1);
     return 18u + cc * 22u;
@@ -121,7 +121,7 @@ ucal_SplitEraWeeksWD(
     int32_t cc;
     uint32_t sw, cy, Q;
 
-    // Use two fast cycle-split divisions again. Herew e want to execute '(weeks * 4 + 2) /%
+    // Use two fast cycle-split divisions again. Here we want to execute '(weeks * 4 + 2) /%
     // 20871' under floor division rules in the first step.
     //
     // This is of course (again) susceptible to internal overflow if coded directly in 32bit. And
@@ -133,7 +133,7 @@ ucal_SplitEraWeeksWD(
         Q = (uint32_t)(m ^ ((m ^ n) / 20871u));
         sw = (uint32_t)(n - Q * 20871u);
     } else {
-        // we use a single Granlund-Möller step again
+        // we use a single Granlund/Möller step again
         uint32_t m = -(weeks < 0);
         uint64_t D = ((uint64_t)weeks << (17 + 2)) + (UINT32_C(2) << 17);
         // now we can divide...
